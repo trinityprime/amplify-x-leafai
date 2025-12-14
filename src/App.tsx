@@ -29,6 +29,13 @@ function App() {
   // Search state
   const [searchId, setSearchId] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [editFarmerId, setEditFarmerId] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editPreviewUrl, setEditPreviewUrl] = useState("");
 
   // Load all detections on mount
   useEffect(() => {
@@ -46,7 +53,7 @@ function App() {
     }
   };
 
-  // Handle file selection
+  // Handle file selection (upload form)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -54,6 +61,19 @@ function App() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle file selection (edit mode)
+  const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -101,7 +121,10 @@ function App() {
         });
         
         if (selectedLabel !== 'unlabeled') {
-          const updated = await updateDetection(detection.id, selectedLabel, selectedPestType);
+          const updated = await updateDetection(detection.id, {
+            label: selectedLabel,
+            pestType: selectedPestType
+          });
           setCurrentDetection({ ...updated, photoUrl: previewUrl });
         } else {
           setCurrentDetection({ ...detection, photoUrl: previewUrl });
@@ -144,7 +167,16 @@ function App() {
     try {
       const detection = await getDetection(searchId);
       setCurrentDetection(detection);
-      setPreviewUrl(detection.photoUrl);
+      setEditMode(false);
+      
+      // Clear the upload form
+      setSelectedFile(null);
+      setPreviewUrl("");
+      setFarmerId("farmer-brian");
+      setLocation("");
+      setSelectedLabel("unlabeled");
+      setSelectedPestType("unknown");
+      
       alert("✅ Detection loaded!");
     } catch (error) {
       console.error(error);
@@ -153,12 +185,89 @@ function App() {
       setLoading(false);
     }
   };
-
   // Load detection from history list
   const handleSelectFromHistory = (detection: LeafDetection) => {
     setCurrentDetection(detection);
-    setPreviewUrl(detection.photoUrl);
+    // Don't set previewUrl - left panel is for NEW uploads only!
     setShowHistory(false);
+    setEditMode(false);
+    
+    // Clear the upload form
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFarmerId("farmer-brian");
+    setLocation("");
+    setSelectedLabel("unlabeled");
+    setSelectedPestType("unknown");
+  };
+
+  // Enter edit mode
+  const handleEnterEditMode = () => {
+    if (!currentDetection) return;
+    
+    setEditFarmerId(currentDetection.farmerId);
+    setEditLocation(currentDetection.location || "");
+    setEditFile(null);
+    setEditPreviewUrl("");
+    setEditMode(true);
+  };
+
+  // Cancel edit mode
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditFile(null);
+    setEditPreviewUrl("");
+  };
+
+  // Save edits
+  const handleSaveEdit = async () => {
+    if (!currentDetection) return;
+
+    if (!editFarmerId.trim() || !editLocation.trim()) {
+      alert("❌ Farmer ID and Location are required!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const updates: any = {
+        farmerId: editFarmerId,
+        location: editLocation
+      };
+
+      // If new image selected, include it
+      if (editFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64String = (reader.result as string).split(',')[1];
+          updates.imageData = base64String;
+          updates.imageType = editFile.type;
+
+          const updated = await updateDetection(currentDetection.id, updates);
+          setCurrentDetection(updated);
+          setPreviewUrl(editPreviewUrl || updated.photoUrl);
+          
+          await loadAllDetections();
+          setEditMode(false);
+          alert("✅ Detection updated successfully!");
+          setLoading(false);
+        };
+        reader.readAsDataURL(editFile);
+      } else {
+        // No new image, just update text fields
+        const updated = await updateDetection(currentDetection.id, updates);
+        setCurrentDetection(updated);
+        
+        await loadAllDetections();
+        setEditMode(false);
+        alert("✅ Detection updated successfully!");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("❌ Failed to update detection!");
+      setLoading(false);
+    }
   };
 
   // Update label of current detection
@@ -174,12 +283,13 @@ function App() {
 
     setLoading(true);
     try {
-      const updated = await updateDetection(currentDetection.id, newLabel, newPestType);
+      const updated = await updateDetection(currentDetection.id, {
+        label: newLabel,
+        pestType: newPestType
+      });
       setCurrentDetection({ ...updated, photoUrl: currentDetection.photoUrl });
       
-      // Reload all detections to update history
       await loadAllDetections();
-      
       alert("✅ Label updated successfully!");
     } catch (error) {
       console.error(error);
@@ -206,10 +316,9 @@ function App() {
       setCurrentDetection(null);
       setPreviewUrl("");
       setSearchId("");
+      setEditMode(false);
       
-      // Reload all detections to update history
       await loadAllDetections();
-      
       alert("✅ Detection deleted successfully!");
     } catch (error) {
       console.error(error);
@@ -230,6 +339,41 @@ function App() {
           <p style={{ fontSize: "18px", fontWeight: "bold", color: "#2196F3" }}>
             📊 Total Uploads: {allDetections.length}
           </p>
+        </div>
+      </div>
+
+      {/* ADD THIS HERE - LOAD BY ID */}
+      <div style={{ 
+        marginTop: "20px",
+        border: "2px solid #FF9800",
+        borderRadius: "10px",
+        padding: "15px",
+        background: "#fff3e0"
+      }}>
+        <h3 style={{ margin: "0 0 10px 0" }}>🔍 Load by ID</h3>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <input
+            type="text"
+            placeholder="Enter Detection ID"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            style={{ padding: "10px", flex: "1", border: "1px solid #ddd", borderRadius: "5px" }}
+          />
+          <button
+            onClick={handleLoadDetection}
+            disabled={loading}
+            style={{
+              background: "#FF9800",
+              color: "white",
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Load
+          </button>
         </div>
       </div>
 
@@ -401,10 +545,10 @@ function App() {
                 ✅ Good (Healthy)
               </button>
               <button 
-                onClick={() => quickLabel("bad", "aphid")}
+                onClick={() => quickLabel("bad", "unhealthy")}  // ← Change here
                 style={{ 
-                  background: selectedLabel === "bad" && selectedPestType === "aphid" ? "#f44336" : "#ddd",
-                  color: selectedLabel === "bad" && selectedPestType === "aphid" ? "white" : "black",
+                  background: selectedLabel === "bad" && selectedPestType === "unhealthy" ? "#f44336" : "#ddd",  // ← And here
+                  color: selectedLabel === "bad" && selectedPestType === "unhealthy" ? "white" : "black",  // ← And here
                   padding: "10px 15px",
                   border: "none",
                   borderRadius: "5px",
@@ -412,7 +556,7 @@ function App() {
                   flex: "1"
                 }}
               >
-                ❌ Bad 
+                ❌ Bad (Unhealthy)  
               </button>
             </div>
             
@@ -445,60 +589,154 @@ function App() {
             <span style={{ color: "red" }}>*</span> Required fields
           </p>
 
-          {/* Load Existing Detection */}
-          <div style={{ marginTop: "30px", paddingTop: "20px", borderTop: "2px solid #ddd" }}>
-            <h3>🔍 Load by ID</h3>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                type="text"
-                placeholder="Enter Detection ID"
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                style={{ padding: "8px", flex: "1" }}
-              />
+
+        </div>
+
+        {/* RIGHT PANEL - Result */}
+        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px",minHeight: "400px",maxHeight: "calc(100vh - 300px)",overflowY: "auto"}}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2>📊 Detection Result</h2>
+            {currentDetection && !editMode && (
               <button
-                onClick={handleLoadDetection}
-                disabled={loading}
+                onClick={handleEnterEditMode}
                 style={{
                   background: "#FF9800",
                   color: "white",
                   padding: "8px 15px",
                   border: "none",
                   borderRadius: "5px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  fontWeight: "bold"
                 }}
               >
-                Load
+                ✏️ Edit
               </button>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* RIGHT PANEL - Result */}
-        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px" }}>
-          <h2>📊 Detection Result</h2>
           
           {currentDetection ? (
             <div>
-              <div style={{ 
-                background: currentDetection.label === "good" ? "#e8f5e9" : "#ffebee",
-                padding: "15px",
-                borderRadius: "8px",
-                marginBottom: "15px"
-              }}>
-                <h3 style={{ margin: "0 0 10px 0" }}>
-                  {currentDetection.label === "good" ? "✅ Healthy Leaf" : "❌ Diseased Leaf"}
-                </h3>
-                <p><strong>ID:</strong> {currentDetection.id}</p>
-                <p><strong>Farmer:</strong> {currentDetection.farmerId}</p>
-                <p><strong>Location:</strong> {currentDetection.location || "N/A"}</p>
-                <p><strong>Pest Type:</strong> {currentDetection.pestType}</p>
-                <p><strong>Label:</strong> {currentDetection.label}</p>
-                <p><strong>Uploaded:</strong> {new Date(currentDetection.createdAt).toLocaleString()}</p>
-              </div>
+              {/* EDIT MODE */}
+              {editMode ? (
+                <div style={{
+                  background: "#fff3e0",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  marginBottom: "15px",
+                  border: "2px solid #FF9800"
+                }}>
+                  <h3 style={{ margin: "0 0 15px 0", color: "#FF9800" }}>✏️ Editing Detection</h3>
+                  
+                  {/* Edit Image */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                      Replace Image (optional):
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditFileSelect}
+                      style={{ width: "100%" }}
+                    />
+                    {editPreviewUrl && (
+                      <div style={{ marginTop: "10px", textAlign: "center" }}>
+                        <img 
+                          src={editPreviewUrl} 
+                          alt="New preview" 
+                          style={{ 
+                            maxWidth: "100%", 
+                            maxHeight: "200px",
+                            border: "2px solid #FF9800",
+                            borderRadius: "8px"
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit Farmer ID */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                      Farmer ID:
+                    </label>
+                    <input
+                      type="text"
+                      value={editFarmerId}
+                      onChange={(e) => setEditFarmerId(e.target.value)}
+                      style={{ padding: "8px", width: "100%" }}
+                    />
+                  </div>
+
+                  {/* Edit Location */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                      Location:
+                    </label>
+                    <input
+                      type="text"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      style={{ padding: "8px", width: "100%" }}
+                    />
+                  </div>
+
+                  {/* Save/Cancel Buttons */}
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={loading}
+                      style={{
+                        background: "#4CAF50",
+                        color: "white",
+                        padding: "10px",
+                        flex: "1",
+                        border: "none",
+                        borderRadius: "5px",
+                        cursor: "pointer",
+                        fontWeight: "bold"
+                      }}
+                    >
+                      💾 Save Changes
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={loading}
+                      style={{
+                        background: "#999",
+                        color: "white",
+                        padding: "10px",
+                        flex: "1",
+                        border: "none",
+                        borderRadius: "5px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* NORMAL VIEW MODE */
+                <div style={{ 
+                  background: currentDetection.label === "good" ? "#e8f5e9" : "#ffebee",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  marginBottom: "15px"
+                }}>
+                  <h3 style={{ margin: "0 0 10px 0" }}>
+                    {currentDetection.label === "good" ? "✅ Healthy Leaf" : "❌ Diseased Leaf"}
+                  </h3>
+                  <p><strong>ID:</strong> {currentDetection.id}</p>
+                  <p><strong>Farmer:</strong> {currentDetection.farmerId}</p>
+                  <p><strong>Location:</strong> {currentDetection.location || "N/A"}</p>
+                  <p><strong>Pest Type:</strong> {currentDetection.pestType}</p>
+                  <p><strong>Label:</strong> {currentDetection.label}</p>
+                  <p><strong>Uploaded:</strong> {new Date(currentDetection.createdAt).toLocaleString()}</p>
+                </div>
+              )}
 
               {/* Show uploaded image */}
-              {currentDetection.photoUrl && (
+              {currentDetection.photoUrl && !editMode && (
                 <div style={{ textAlign: "center", marginTop: "15px", marginBottom: "15px" }}>
                   <h4>Uploaded Image:</h4>
                   <img 
@@ -515,59 +753,63 @@ function App() {
               )}
 
               {/* UPDATE LABEL BUTTONS */}
-              <div style={{ marginBottom: "15px" }}>
-                <h4>🔄 Update Label:</h4>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    onClick={() => handleUpdateLabel("good", "healthy")}
-                    disabled={loading}
-                    style={{
-                      background: "#4CAF50",
-                      color: "white",
-                      padding: "10px",
-                      flex: "1",
-                      border: "none",
-                      borderRadius: "5px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    ✅ Mark as Good
-                  </button>
-                  <button
-                    onClick={() => handleUpdateLabel("bad", "aphid")}
-                    disabled={loading}
-                    style={{
-                      background: "#f44336",
-                      color: "white",
-                      padding: "10px",
-                      flex: "1",
-                      border: "none",
-                      borderRadius: "5px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    ❌ Mark as Bad
-                  </button>
-                </div>
-              </div>
+              {!editMode && (
+                <>
+                  <div style={{ marginBottom: "15px" }}>
+                    <h4>🔄 Update Label:</h4>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button
+                        onClick={() => handleUpdateLabel("good", "healthy")}
+                        disabled={loading}
+                        style={{
+                          background: "#4CAF50",
+                          color: "white",
+                          padding: "10px",
+                          flex: "1",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        ✅ Mark as Good
+                      </button>
+                      <button
+                        onClick={() => handleUpdateLabel("bad", "unhealthy")}
+                        disabled={loading}
+                        style={{
+                          background: "#f44336",
+                          color: "white",
+                          padding: "10px",
+                          flex: "1",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        ❌ Mark as Bad
+                      </button>
+                    </div>
+                  </div>
 
-              {/* DELETE BUTTON */}
-              <button
-                onClick={handleDelete}
-                disabled={loading}
-                style={{
-                  background: "#d32f2f",
-                  color: "white",
-                  padding: "12px",
-                  width: "100%",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-              >
-                🗑️ Delete Detection
-              </button>
+                  {/* DELETE BUTTON */}
+                  <button
+                    onClick={handleDelete}
+                    disabled={loading}
+                    style={{
+                      background: "#d32f2f",
+                      color: "white",
+                      padding: "12px",
+                      width: "100%",
+                      border: "none",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      fontWeight: "bold"
+                    }}
+                  >
+                    🗑️ Delete Detection
+                  </button>
+                </>
+              )}
 
               <details style={{ marginTop: "15px" }}>
                 <summary style={{ cursor: "pointer", fontWeight: "bold" }}>
@@ -588,7 +830,12 @@ function App() {
             <div style={{ 
               textAlign: "center", 
               padding: "50px", 
-              color: "#999" 
+              color: "#999",
+              minHeight: "300px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center"
             }}>
               <p>📭 No detection selected</p>
               <p>Upload an image, load by ID, or select from history</p>

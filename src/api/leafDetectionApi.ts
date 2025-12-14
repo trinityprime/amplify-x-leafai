@@ -53,18 +53,25 @@ export const createDetection = async (data: {
   return result.detection;
 };
 
-// PUT - Label/update detection
+// PUT - Update detection (label, pestType, farmerId, location, image)
 export const updateDetection = async (
   id: string,
-  label: string,
-  pestType: string
+  updates: {
+    label?: string;
+    pestType?: string;
+    farmerId?: string;
+    location?: string;
+    content?: string;
+    imageData?: string;
+    imageType?: string;
+  }
 ): Promise<LeafDetection> => {
   const response = await fetch(`${API_BASE_URL}/images/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ id, label, pestType }),
+    body: JSON.stringify({ id, ...updates }),
   });
   
   if (!response.ok) {
