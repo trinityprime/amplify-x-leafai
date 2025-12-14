@@ -27,9 +27,11 @@ button {
   transition: border-color 0.25s;
   color: white;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -62,4 +64,8 @@ li:hover {
 a {
   font-weight: 800;
   text-decoration: none;
+}
+
+.amplify-card.amplify-card--outlined {
+  margin-bottom: 2rem;
 }
