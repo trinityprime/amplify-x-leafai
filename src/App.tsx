@@ -29,6 +29,8 @@ function App() {
   // Search state
   const [searchId, setSearchId] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  const [filterGood, setFilterGood] = useState(true);
+  const [filterBad, setFilterBad] = useState(true);
   
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
@@ -51,6 +53,15 @@ function App() {
     } catch (error) {
       console.error("Failed to load detections:", error);
     }
+  };
+
+  // Filter detections based on selected filters
+  const getFilteredDetections = () => {
+    return allDetections.filter(detection => {
+      if (filterGood && detection.label === "good") return true;
+      if (filterBad && detection.label === "bad") return true;
+      return false;
+    });
   };
 
   // Handle file selection (upload form)
@@ -404,64 +415,121 @@ function App() {
         </div>
 
         {showHistory && (
-          <div style={{ marginTop: "15px", maxHeight: "300px", overflowY: "auto" }}>
-            {allDetections.length === 0 ? (
-              <p style={{ textAlign: "center", color: "#999" }}>No uploads yet</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#e3f2fd" }}>
-                    <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>ID</th>
-                    <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Farmer</th>
-                    <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Location</th>
-                    <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Label</th>
-                    <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Date</th>
-                    <th style={{ padding: "10px", textAlign: "center", border: "1px solid #ddd" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allDetections.map((detection) => (
-                    <tr key={detection.id} style={{ borderBottom: "1px solid #ddd" }}>
-                      <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
-                        {detection.id.substring(0, 20)}...
-                      </td>
-                      <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.farmerId}</td>
-                      <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.location || "N/A"}</td>
-                      <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                        <span style={{
-                          background: detection.label === "good" ? "#4CAF50" : "#f44336",
-                          color: "white",
-                          padding: "3px 8px",
-                          borderRadius: "3px",
-                          fontSize: "12px"
-                        }}>
-                          {detection.label}
-                        </span>
-                      </td>
-                      <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
-                        {new Date(detection.createdAt).toLocaleDateString()}
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center", border: "1px solid #ddd" }}>
-                        <button
-                          onClick={() => handleSelectFromHistory(detection)}
-                          style={{
-                            background: "#FF9800",
-                            color: "white",
-                            padding: "5px 10px",
-                            border: "none",
-                            borderRadius: "3px",
-                            cursor: "pointer",
-                            fontSize: "12px"
-                          }}
-                        >
-                          View
-                        </button>
-                      </td>
+          <div>
+            {/* FILTER CHECKBOXES */}
+            <div style={{ 
+              marginTop: "15px", 
+              marginBottom: "15px",
+              padding: "10px",
+              background: "white",
+              borderRadius: "5px",
+              border: "1px solid #ddd"
+            }}>
+              <strong>🔍 Filter by Label:</strong>
+              <div style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={filterGood}
+                    onChange={(e) => setFilterGood(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span style={{ 
+                    background: "#4CAF50", 
+                    color: "white", 
+                    padding: "3px 10px", 
+                    borderRadius: "3px",
+                    fontSize: "14px"
+                  }}>
+                    ✅ Good
+                  </span>
+                </label>
+                
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={filterBad}
+                    onChange={(e) => setFilterBad(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span style={{ 
+                    background: "#f44336", 
+                    color: "white", 
+                    padding: "3px 10px", 
+                    borderRadius: "3px",
+                    fontSize: "14px"
+                  }}>
+                    ❌ Bad
+                  </span>
+                </label>
+              </div>
+              <p style={{ fontSize: "12px", color: "#666", marginTop: "8px", marginBottom: 0 }}>
+                Showing: {getFilteredDetections().length} of {allDetections.length} uploads
+              </p>
+            </div>
+
+            {/* TABLE */}
+            <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+              {getFilteredDetections().length === 0 ? (
+                <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+                  No uploads match the selected filters
+                </p>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#e3f2fd" }}>
+                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>ID</th>
+                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Farmer</th>
+                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Location</th>
+                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Label</th>
+                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Date</th>
+                      <th style={{ padding: "10px", textAlign: "center", border: "1px solid #ddd" }}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
+                  <tbody>
+                    {getFilteredDetections().map((detection) => (
+                      <tr key={detection.id} style={{ borderBottom: "1px solid #ddd" }}>
+                        <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
+                          {detection.id.substring(0, 20)}...
+                        </td>
+                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.farmerId}</td>
+                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.location || "N/A"}</td>
+                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>
+                          <span style={{
+                            background: detection.label === "good" ? "#4CAF50" : "#f44336",
+                            color: "white",
+                            padding: "3px 8px",
+                            borderRadius: "3px",
+                            fontSize: "12px"
+                          }}>
+                            {detection.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
+                          {new Date(detection.createdAt).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: "8px", textAlign: "center", border: "1px solid #ddd" }}>
+                          <button
+                            onClick={() => handleSelectFromHistory(detection)}
+                            style={{
+                              background: "#FF9800",
+                              color: "white",
+                              padding: "5px 10px",
+                              border: "none",
+                              borderRadius: "3px",
+                              cursor: "pointer",
+                              fontSize: "12px"
+                            }}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         )}
       </div>
