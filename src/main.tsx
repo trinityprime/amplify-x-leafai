@@ -6,13 +6,29 @@ import "./index.css";
 import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Layout from "./lat/components/Layout.tsx";
+import Dashboard from "./lat/pages/Dashboard.tsx";
+import Reports from "./lat/pages/Reports.tsx";
+import NewReport from "./lat/pages/NewReport.tsx";
+import NotFound from "./lat/pages/NotFound.tsx";
 
 Amplify.configure(outputs);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Authenticator hideSignUp>
-      <App />
-    </Authenticator>
+    <BrowserRouter>
+      <Authenticator hideSignUp>
+        <Routes>
+          <Route path="/" element={<Layout/>}>
+            <Route index element={<App/>}/>
+            <Route path="dashboard" element={<Dashboard/>} />
+            <Route path="reports" element={<Reports/>} />
+            <Route path="new" element={<NewReport/>} />
+            <Route path="*" element={<NotFound/>} />
+          </Route>
+        </Routes>
+      </Authenticator>
+    </BrowserRouter>
   </React.StrictMode>
 );
