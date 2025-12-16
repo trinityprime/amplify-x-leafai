@@ -14,6 +14,7 @@ import NewReport from "./pages/NewReport.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Dashboardv2 from "./pages/Dashboardv2.tsx";
 import UserDashboard from "./pages/UserDashboard.tsx";
+import UploadImages from "./pages/UploadImages.tsx";
 
 Amplify.configure(outputs);
 
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="reports" element={<Reports />} />
             <Route path="new" element={<NewReport />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="uploadimg" element={<UploadImages />} />
           </Route>
         </Routes>
       </Authenticator>

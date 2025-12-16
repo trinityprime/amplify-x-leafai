@@ -5,6 +5,7 @@ import Dashboard from "./pages/UserDashboard";
 function App() {
   const { user, signOut } = useAuthenticator();
 
+
   return (
     <>
       <Header onSignOut={signOut} />
