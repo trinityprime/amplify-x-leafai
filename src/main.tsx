@@ -8,11 +8,11 @@ import outputs from "../amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/layout/Layout.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
-import Reports from "./pages/Reports.tsx";
-import NewReport from "./pages/NewReport.tsx";
+import Dashboard from "./pages/FarmReport/Dashboard.tsx";
+import Reports from "./pages/FarmReport/Reports.tsx";
+import NewReport from "./pages/FarmReport/NewReport.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import Dashboardv2 from "./pages/Dashboardv2.tsx";
+import Dashboardv2 from "./pages/FarmReport/Dashboardv2.tsx";
 import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
 import Test from "./pages/Test.tsx"
