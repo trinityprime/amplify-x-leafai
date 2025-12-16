@@ -93,10 +93,6 @@ function Dashboardv2() {
     const timeseries = summary?.timeseries || [];
 
 
-
-
-
-
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
             <h2>Pest Pattern Dashboard</h2>
