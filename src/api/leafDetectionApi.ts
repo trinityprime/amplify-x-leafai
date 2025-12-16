@@ -36,6 +36,7 @@ export const createDetection = async (data: {
   location?: string;
   imageData?: string;
   imageType?: string;
+  userEmail?: string;  // ← ADD THIS
 }): Promise<LeafDetection> => {
   const response = await fetch(`${API_BASE_URL}/images`, {
     method: 'POST',
@@ -97,9 +98,16 @@ export const deleteDetection = async (id: string): Promise<void> => {
   }
 };
 
-// LIST ALL - Get all detections
-export const listAllDetections = async (): Promise<LeafDetection[]> => {
-  const response = await fetch(`${API_BASE_URL}/images`, {
+// LIST ALL - Get all detections for a user
+export const listAllDetections = async (userEmail?: string): Promise<LeafDetection[]> => {
+  let url = `${API_BASE_URL}/images`;
+  
+  // Add user filter if provided
+  if (userEmail) {
+    url += `?userEmail=${encodeURIComponent(userEmail)}`;
+  }
+  
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

@@ -44,12 +44,13 @@ function App() {
     loadAllDetections();
   }, []);
 
-  // Load all detections
+  // Load all detections for current user
   const loadAllDetections = async () => {
     try {
-      const detections = await listAllDetections();
+      const userEmail = user?.signInDetails?.loginId;  // Get logged-in user email
+      const detections = await listAllDetections(userEmail);
       setAllDetections(detections);
-      console.log("Loaded detections:", detections.length);
+      console.log("Loaded detections for", userEmail, ":", detections.length);
     } catch (error) {
       console.error("Failed to load detections:", error);
     }
@@ -123,13 +124,14 @@ function App() {
       reader.onloadend = async () => {
         const base64String = (reader.result as string).split(',')[1];
         
-        const detection = await createDetection({
-          farmerId,
-          content: `${selectedLabel} - ${selectedPestType}`,
-          location,
-          imageData: base64String,
-          imageType: selectedFile!.type,
-        });
+      const detection = await createDetection({
+        farmerId,
+        content: `${selectedLabel} - ${selectedPestType}`,
+        location,
+        imageData: base64String,
+        imageType: selectedFile!.type,
+        userEmail: user?.signInDetails?.loginId  // ← ADD THIS
+      });
         
         if (selectedLabel !== 'unlabeled') {
           const updated = await updateDetection(detection.id, {
