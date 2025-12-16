@@ -6,13 +6,14 @@ import "./index.css";
 import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
+import UploadImages from "./pages/UploadImages.tsx";
 
 Amplify.configure(outputs);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Authenticator hideSignUp>
-      <App />
+      <UploadImages />
     </Authenticator>
   </React.StrictMode>
 );

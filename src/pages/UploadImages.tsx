@@ -1,348 +1,349 @@
 import { useState, useEffect } from "react";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { 
-  createDetection, 
-  updateDetection, 
-  getDetection, 
-  deleteDetection, 
-  listAllDetections,
-  LeafDetection 
-} from "./hooks/leafDetectionApi";
-import "./App.css";
+import {
+    createDetection,
+    updateDetection,
+    getDetection,
+    deleteDetection,
+    listAllDetections,
+    LeafDetection
+} from "../hooks/leafDetectionApi";
 
-function App() {
-  const { user, signOut } = useAuthenticator();
-  
-  // Upload state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [farmerId, setFarmerId] = useState("farmer-brian");
-  const [location, setLocation] = useState("");
-  const [selectedLabel, setSelectedLabel] = useState("unlabeled");
-  const [selectedPestType, setSelectedPestType] = useState("unknown");
-  
-  // Detection state
-  const [currentDetection, setCurrentDetection] = useState<LeafDetection | null>(null);
-  const [allDetections, setAllDetections] = useState<LeafDetection[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  // Search state
-  const [searchId, setSearchId] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
-  const [filterGood, setFilterGood] = useState(true);
-  const [filterBad, setFilterBad] = useState(true);
-  
-  // Edit mode state
-  const [editMode, setEditMode] = useState(false);
-  const [editFarmerId, setEditFarmerId] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editFile, setEditFile] = useState<File | null>(null);
-  const [editPreviewUrl, setEditPreviewUrl] = useState("");
 
-  // Load all detections on mount
-  useEffect(() => {
-    loadAllDetections();
-  }, []);
+function UploadImages() {
+    const { user, signOut } = useAuthenticator();
 
-  // Load all detections for current user
-  const loadAllDetections = async () => {
-    try {
-      const userEmail = user?.signInDetails?.loginId;  // Get logged-in user email
-      const detections = await listAllDetections(userEmail);
-      setAllDetections(detections);
-      console.log("Loaded detections for", userEmail, ":", detections.length);
-    } catch (error) {
-      console.error("Failed to load detections:", error);
-    }
-  };
+    // Upload state
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string>("");
+    const [farmerId, setFarmerId] = useState("farmer-brian");
+    const [location, setLocation] = useState("");
+    const [selectedLabel, setSelectedLabel] = useState("unlabeled");
+    const [selectedPestType, setSelectedPestType] = useState("unknown");
 
-  // Filter detections based on selected filters
-  const getFilteredDetections = () => {
-    return allDetections.filter(detection => {
-      if (filterGood && detection.label === "good") return true;
-      if (filterBad && detection.label === "bad") return true;
-      return false;
-    });
-  };
+    // Detection state
+    const [currentDetection, setCurrentDetection] = useState<LeafDetection | null>(null);
+    const [allDetections, setAllDetections] = useState<LeafDetection[]>([]);
+    const [loading, setLoading] = useState(false);
 
-  // Handle file selection (upload form)
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    // Search state
+    const [searchId, setSearchId] = useState("");
+    const [showHistory, setShowHistory] = useState(false);
+    const [filterGood, setFilterGood] = useState(true);
+    const [filterBad, setFilterBad] = useState(true);
 
-  // Handle file selection (edit mode)
-  const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setEditFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    // Edit mode state
+    const [editMode, setEditMode] = useState(false);
+    const [editFarmerId, setEditFarmerId] = useState("");
+    const [editLocation, setEditLocation] = useState("");
+    const [editFile, setEditFile] = useState<File | null>(null);
+    const [editPreviewUrl, setEditPreviewUrl] = useState("");
 
-  // Validation
-  const validateForm = (): boolean => {
-    if (!selectedFile) {
-      alert("❌ Please select a photo!");
-      return false;
-    }
-    if (!farmerId.trim()) {
-      alert("❌ Please enter Farmer ID!");
-      return false;
-    }
-    if (!location.trim()) {
-      alert("❌ Please enter Location!");
-      return false;
-    }
-    if (selectedLabel === "unlabeled") {
-      alert("❌ Please select a label (Good or Bad)!");
-      return false;
-    }
-    return true;
-  };
+    // Load all detections on mount
+    useEffect(() => {
+        loadAllDetections();
+    }, []);
 
-  // Upload image with label
-  const handleUpload = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        
-      const detection = await createDetection({
-        farmerId,
-        content: `${selectedLabel} - ${selectedPestType}`,
-        location,
-        imageData: base64String,
-        imageType: selectedFile!.type,
-        userEmail: user?.signInDetails?.loginId  // ← ADD THIS
-      });
-        
-        if (selectedLabel !== 'unlabeled') {
-          const updated = await updateDetection(detection.id, {
-            label: selectedLabel,
-            pestType: selectedPestType
-          });
-          setCurrentDetection({ ...updated, photoUrl: previewUrl });
-        } else {
-          setCurrentDetection({ ...detection, photoUrl: previewUrl });
+    // Load all detections for current user
+    const loadAllDetections = async () => {
+        try {
+            const userEmail = user?.signInDetails?.loginId;  // Get logged-in user email
+            const detections = await listAllDetections(userEmail);
+            setAllDetections(detections);
+            console.log("Loaded detections for", userEmail, ":", detections.length);
+        } catch (error) {
+            console.error("Failed to load detections:", error);
         }
-        
-        // Reload all detections to update history
-        await loadAllDetections();
-        
-        alert("✅ Detection uploaded successfully!");
-        
-        // Reset form but keep result
+    };
+
+    // Filter detections based on selected filters
+    const getFilteredDetections = () => {
+        return allDetections.filter(detection => {
+            if (filterGood && detection.label === "good") return true;
+            if (filterBad && detection.label === "bad") return true;
+            return false;
+        });
+    };
+
+    // Handle file selection (upload form)
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Handle file selection (edit mode)
+    const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setEditFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditPreviewUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Validation
+    const validateForm = (): boolean => {
+        if (!selectedFile) {
+            alert("❌ Please select a photo!");
+            return false;
+        }
+        if (!farmerId.trim()) {
+            alert("❌ Please enter Farmer ID!");
+            return false;
+        }
+        if (!location.trim()) {
+            alert("❌ Please enter Location!");
+            return false;
+        }
+        if (selectedLabel === "unlabeled") {
+            alert("❌ Please select a label (Good or Bad)!");
+            return false;
+        }
+        return true;
+    };
+
+    // Upload image with label
+    const handleUpload = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = (reader.result as string).split(',')[1];
+
+                const detection = await createDetection({
+                    farmerId,
+                    content: `${selectedLabel} - ${selectedPestType}`,
+                    location,
+                    imageData: base64String,
+                    imageType: selectedFile!.type,
+                    userEmail: user?.signInDetails?.loginId  // ← ADD THIS
+                });
+
+                if (selectedLabel !== 'unlabeled') {
+                    const updated = await updateDetection(detection.id, {
+                        label: selectedLabel,
+                        pestType: selectedPestType
+                    });
+                    setCurrentDetection({ ...updated, photoUrl: previewUrl });
+                } else {
+                    setCurrentDetection({ ...detection, photoUrl: previewUrl });
+                }
+
+                // Reload all detections to update history
+                await loadAllDetections();
+
+                alert("✅ Detection uploaded successfully!");
+
+                // Reset form but keep result
+                setSelectedFile(null);
+                setLocation("");
+                setSelectedLabel("unlabeled");
+                setSelectedPestType("unknown");
+            };
+            reader.readAsDataURL(selectedFile!);
+        } catch (error) {
+            console.error(error);
+            alert("❌ Failed to upload detection");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Quick label buttons
+    const quickLabel = (label: string, pestType: string) => {
+        setSelectedLabel(label);
+        setSelectedPestType(pestType);
+    };
+
+    // Load existing detection by ID
+    const handleLoadDetection = async () => {
+        if (!searchId.trim()) {
+            alert("❌ Please enter a Detection ID!");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const detection = await getDetection(searchId);
+            setCurrentDetection(detection);
+            setEditMode(false);
+
+            // Clear the upload form
+            setSelectedFile(null);
+            setPreviewUrl("");
+            setFarmerId("farmer-brian");
+            setLocation("");
+            setSelectedLabel("unlabeled");
+            setSelectedPestType("unknown");
+
+            alert("✅ Detection loaded!");
+        } catch (error) {
+            console.error(error);
+            alert("❌ Detection not found!");
+        } finally {
+            setLoading(false);
+        }
+    };
+    // Load detection from history list
+    const handleSelectFromHistory = (detection: LeafDetection) => {
+        setCurrentDetection(detection);
+        // Don't set previewUrl - left panel is for NEW uploads only!
+        setShowHistory(false);
+        setEditMode(false);
+
+        // Clear the upload form
         setSelectedFile(null);
+        setPreviewUrl("");
+        setFarmerId("farmer-brian");
         setLocation("");
         setSelectedLabel("unlabeled");
         setSelectedPestType("unknown");
-      };
-      reader.readAsDataURL(selectedFile!);
-    } catch (error) {
-      console.error(error);
-      alert("❌ Failed to upload detection");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Quick label buttons
-  const quickLabel = (label: string, pestType: string) => {
-    setSelectedLabel(label);
-    setSelectedPestType(pestType);
-  };
+    // Enter edit mode
+    const handleEnterEditMode = () => {
+        if (!currentDetection) return;
 
-  // Load existing detection by ID
-  const handleLoadDetection = async () => {
-    if (!searchId.trim()) {
-      alert("❌ Please enter a Detection ID!");
-      return;
-    }
+        setEditFarmerId(currentDetection.farmerId);
+        setEditLocation(currentDetection.location || "");
+        setEditFile(null);
+        setEditPreviewUrl("");
+        setEditMode(true);
+    };
 
-    setLoading(true);
-    try {
-      const detection = await getDetection(searchId);
-      setCurrentDetection(detection);
-      setEditMode(false);
-      
-      // Clear the upload form
-      setSelectedFile(null);
-      setPreviewUrl("");
-      setFarmerId("farmer-brian");
-      setLocation("");
-      setSelectedLabel("unlabeled");
-      setSelectedPestType("unknown");
-      
-      alert("✅ Detection loaded!");
-    } catch (error) {
-      console.error(error);
-      alert("❌ Detection not found!");
-    } finally {
-      setLoading(false);
-    }
-  };
-  // Load detection from history list
-  const handleSelectFromHistory = (detection: LeafDetection) => {
-    setCurrentDetection(detection);
-    // Don't set previewUrl - left panel is for NEW uploads only!
-    setShowHistory(false);
-    setEditMode(false);
-    
-    // Clear the upload form
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setFarmerId("farmer-brian");
-    setLocation("");
-    setSelectedLabel("unlabeled");
-    setSelectedPestType("unknown");
-  };
-
-  // Enter edit mode
-  const handleEnterEditMode = () => {
-    if (!currentDetection) return;
-    
-    setEditFarmerId(currentDetection.farmerId);
-    setEditLocation(currentDetection.location || "");
-    setEditFile(null);
-    setEditPreviewUrl("");
-    setEditMode(true);
-  };
-
-  // Cancel edit mode
-  const handleCancelEdit = () => {
-    setEditMode(false);
-    setEditFile(null);
-    setEditPreviewUrl("");
-  };
-
-  // Save edits
-  const handleSaveEdit = async () => {
-    if (!currentDetection) return;
-
-    if (!editFarmerId.trim() || !editLocation.trim()) {
-      alert("❌ Farmer ID and Location are required!");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const updates: any = {
-        farmerId: editFarmerId,
-        location: editLocation
-      };
-
-      // If new image selected, include it
-      if (editFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64String = (reader.result as string).split(',')[1];
-          updates.imageData = base64String;
-          updates.imageType = editFile.type;
-
-          const updated = await updateDetection(currentDetection.id, updates);
-          setCurrentDetection(updated);
-          setPreviewUrl(editPreviewUrl || updated.photoUrl);
-          
-          await loadAllDetections();
-          setEditMode(false);
-          alert("✅ Detection updated successfully!");
-          setLoading(false);
-        };
-        reader.readAsDataURL(editFile);
-      } else {
-        // No new image, just update text fields
-        const updated = await updateDetection(currentDetection.id, updates);
-        setCurrentDetection(updated);
-        
-        await loadAllDetections();
+    // Cancel edit mode
+    const handleCancelEdit = () => {
         setEditMode(false);
-        alert("✅ Detection updated successfully!");
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("❌ Failed to update detection!");
-      setLoading(false);
-    }
-  };
+        setEditFile(null);
+        setEditPreviewUrl("");
+    };
 
-  // Update label of current detection
-  const handleUpdateLabel = async (newLabel: string, newPestType: string) => {
-    if (!currentDetection) {
-      alert("❌ No detection loaded!");
-      return;
-    }
+    // Save edits
+    const handleSaveEdit = async () => {
+        if (!currentDetection) return;
 
-    if (!confirm(`Change label to: ${newLabel} (${newPestType})?`)) {
-      return;
-    }
+        if (!editFarmerId.trim() || !editLocation.trim()) {
+            alert("❌ Farmer ID and Location are required!");
+            return;
+        }
 
-    setLoading(true);
-    try {
-      const updated = await updateDetection(currentDetection.id, {
-        label: newLabel,
-        pestType: newPestType
-      });
-      setCurrentDetection({ ...updated, photoUrl: currentDetection.photoUrl });
-      
-      await loadAllDetections();
-      alert("✅ Label updated successfully!");
-    } catch (error) {
-      console.error(error);
-      alert("❌ Failed to update label!");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setLoading(true);
+        try {
+            const updates: any = {
+                farmerId: editFarmerId,
+                location: editLocation
+            };
 
-  // Delete current detection
-  const handleDelete = async () => {
-    if (!currentDetection) {
-      alert("❌ No detection to delete!");
-      return;
-    }
+            // If new image selected, include it
+            if (editFile) {
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    const base64String = (reader.result as string).split(',')[1];
+                    updates.imageData = base64String;
+                    updates.imageType = editFile.type;
 
-    if (!confirm(`Are you sure you want to delete detection ${currentDetection.id}?`)) {
-      return;
-    }
+                    const updated = await updateDetection(currentDetection.id, updates);
+                    setCurrentDetection(updated);
+                    setPreviewUrl(editPreviewUrl || updated.photoUrl);
 
-    setLoading(true);
-    try {
-      await deleteDetection(currentDetection.id);
-      setCurrentDetection(null);
-      setPreviewUrl("");
-      setSearchId("");
-      setEditMode(false);
-      
-      await loadAllDetections();
-      alert("✅ Detection deleted successfully!");
-    } catch (error) {
-      console.error(error);
-      alert("❌ Failed to delete detection!");
-    } finally {
-      setLoading(false);
-    }
-  };
+                    await loadAllDetections();
+                    setEditMode(false);
+                    alert("✅ Detection updated successfully!");
+                    setLoading(false);
+                };
+                reader.readAsDataURL(editFile);
+            } else {
+                // No new image, just update text fields
+                const updated = await updateDetection(currentDetection.id, updates);
+                setCurrentDetection(updated);
 
-  return (
-    <main style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+                await loadAllDetections();
+                setEditMode(false);
+                alert("✅ Detection updated successfully!");
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("❌ Failed to update detection!");
+            setLoading(false);
+        }
+    };
+
+    // Update label of current detection
+    const handleUpdateLabel = async (newLabel: string, newPestType: string) => {
+        if (!currentDetection) {
+            alert("❌ No detection loaded!");
+            return;
+        }
+
+        if (!confirm(`Change label to: ${newLabel} (${newPestType})?`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const updated = await updateDetection(currentDetection.id, {
+                label: newLabel,
+                pestType: newPestType
+            });
+            setCurrentDetection({ ...updated, photoUrl: currentDetection.photoUrl });
+
+            await loadAllDetections();
+            alert("✅ Label updated successfully!");
+        } catch (error) {
+            console.error(error);
+            alert("❌ Failed to update label!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Delete current detection
+    const handleDelete = async () => {
+        if (!currentDetection) {
+            alert("❌ No detection to delete!");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete detection ${currentDetection.id}?`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await deleteDetection(currentDetection.id);
+            setCurrentDetection(null);
+            setPreviewUrl("");
+            setSearchId("");
+            setEditMode(false);
+
+            await loadAllDetections();
+            alert("✅ Detection deleted successfully!");
+        } catch (error) {
+            console.error(error);
+            alert("❌ Failed to delete detection!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    return (
+        <main style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1>🍃 LeafAI - Pest Detection System</h1>
@@ -929,7 +930,7 @@ function App() {
         Sign Out
       </button>
     </main>
-  );
+    )
 }
 
-export default App;
+export default UploadImages
