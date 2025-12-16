@@ -13,6 +13,7 @@ import Reports from "./pages/Reports.tsx";
 import NewReport from "./pages/NewReport.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Dashboardv2 from "./pages/Dashboardv2.tsx";
+import UserDashboard from "./pages/UserDashboard.tsx";
 
 Amplify.configure(outputs);
 
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<App />} />
+            <Route path="userdashboard" element={<UserDashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="dashboard2" element={<Dashboardv2 />} />
             <Route path="reports" element={<Reports />} />

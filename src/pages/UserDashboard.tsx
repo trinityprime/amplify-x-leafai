@@ -3,7 +3,7 @@ import { useUsers } from "../hooks/userUsers";
 import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
 
-export default function Dashboard({ user }: any) {
+export default function UserDashboard({ user }: any) {
     const {
         users,
         emailError,
