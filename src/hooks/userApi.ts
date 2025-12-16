@@ -4,13 +4,20 @@ export function useUsers(user: any) {
     const [users, setUsers] = useState<any[]>([]);
     const [emailError, setEmailError] = useState("");
 
-    const fetchUsers = () => {
-        fetch("https://3yto3bj5j7.execute-api.ap-southeast-1.amazonaws.com/prod/users")
-            .then(res => res.json())
-            .then(data => {
-                const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data;
-                setUsers(Array.isArray(parsed) ? parsed : []);
-            });
+    const fetchUsers = async () => {
+        try {
+            const res = await fetch("https://3yto3bj5j7.execute-api.ap-southeast-1.amazonaws.com/prod/users");
+            const data = await res.json();
+            const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data;
+            const usersWithGroups = parsed.map((u: any) => ({
+                ...u,
+                groups: u.groups || []
+            }));
+            setUsers(usersWithGroups);
+        } catch (err) {
+            console.error("fetchUsers error:", err);
+            setUsers([]);
+        }
     };
 
     useEffect(() => {
@@ -30,11 +37,11 @@ export function useUsers(user: any) {
         return true;
     };
 
-    const createUser = (email: string) =>
+    const createUser = (email: string, role: string) =>
         fetch("https://qw6fkni710.execute-api.ap-southeast-1.amazonaws.com/prod/users", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, role })
         }).then(fetchUsers);
 
     const enableUser = (username: string) =>

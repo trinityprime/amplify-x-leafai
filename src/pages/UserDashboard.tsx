@@ -1,5 +1,5 @@
 import { Heading, Card } from "@aws-amplify/ui-react";
-import { useUsers } from "../hooks/userUsers";
+import { useUsers } from "../hooks/userApi";
 import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
 
