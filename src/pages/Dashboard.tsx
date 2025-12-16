@@ -1,7 +1,7 @@
 // src/lat/pages/Dashboard.tsx
 import { useEffect, useMemo, useState } from "react";
-import { getSummary, listReports } from "../api/api";
-import CreateReportForm from "../components/CreateReportForm";
+import { getSummary, listReports } from "../hooks/api";
+import CreateReportForm from "../components/FarmReport/CreateReportForm";
 import {
     LineChart,
     Line,
