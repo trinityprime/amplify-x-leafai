@@ -1,9 +1,9 @@
-import { Heading, Card, Button } from "@aws-amplify/ui-react";
+import { Heading, Card} from "@aws-amplify/ui-react";
 import { useUsers } from "../hooks/userUsers";
 import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
 
-export default function Dashboard({ user, signOut }: any) {
+export default function Dashboard({ user}: any) {
     const {
         users,
         emailError,
@@ -32,8 +32,6 @@ export default function Dashboard({ user, signOut }: any) {
                     onDisable={disableUser}
                 />
             </Card>
-
-            <Button marginTop="1rem" onClick={signOut}>SIGN OUT</Button>
         </>
     );
 }

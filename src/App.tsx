@@ -1,10 +1,17 @@
+// in App.tsx
 import { useAuthenticator } from "@aws-amplify/ui-react";
+import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
   const { user, signOut } = useAuthenticator();
 
-  return <Dashboard user={user} signOut={signOut} />;
+  return (
+    <>
+      <Header onSignOut={signOut} />
+      <Dashboard user={user} />
+    </>
+  );
 }
 
 export default App;
