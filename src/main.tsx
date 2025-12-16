@@ -22,18 +22,23 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Authenticator hideSignUp>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<App />} />
-            <Route path="userdashboard" element={<UserDashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="dashboard2" element={<Dashboardv2 />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="new" element={<NewReport />} />
-            <Route path="*" element={<NotFound />} />
-            <Route path="uploadimg" element={<UploadImages />} />
-          </Route>
-        </Routes>
+        {(authData) => {
+          const { user } = authData;
+          return (
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<App />} />
+                <Route path="userdashboard" element={<UserDashboard user={user} />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="dashboard2" element={<Dashboardv2 />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="new" element={<NewReport />} />
+                <Route path="*" element={<NotFound />} />
+                <Route path="uploadimg" element={<UploadImages />} />
+              </Route>
+            </Routes>
+          );
+        }}
       </Authenticator>
     </BrowserRouter>
   </React.StrictMode>

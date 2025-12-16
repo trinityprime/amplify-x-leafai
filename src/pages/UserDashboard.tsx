@@ -3,7 +3,11 @@ import { useUsers } from "../hooks/userUsers";
 import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
 
-export default function UserDashboard({ user }: any) {
+type UserDashboardProps = {
+    user: any; // or AuthUser if you want stricter typing
+};
+
+export default function UserDashboard({ user }: UserDashboardProps) {
     const {
         users,
         emailError,
@@ -16,7 +20,7 @@ export default function UserDashboard({ user }: any) {
     return (
         <>
             <Heading marginBottom="1rem" level={2}>
-                Welcome, {user?.signInDetails?.loginId?.split("@")[0]}
+                Welcome, {user?.signInDetails?.loginId?.split("@")[0] ?? "User"}
             </Heading>
 
             <CreateUserForm
