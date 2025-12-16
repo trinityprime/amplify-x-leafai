@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSummary, listReports } from "../api/api";
+import { getSummary, listReports } from "../hooks/api";
 import {
     LineChart,
     Line,

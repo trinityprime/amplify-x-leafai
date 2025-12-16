@@ -7,12 +7,12 @@ import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Layout from "./lat/components/Layout.tsx";
-import Dashboard from "./lat/pages/Dashboard.tsx";
-import Reports from "./lat/pages/Reports.tsx";
-import NewReport from "./lat/pages/NewReport.tsx";
-import NotFound from "./lat/pages/NotFound.tsx";
-import Dashboardv2 from "./lat/pages/Dashboardv2.tsx";
+import Layout from "./components/layout/Layout.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
+import Reports from "./pages/Reports.tsx";
+import NewReport from "./pages/NewReport.tsx";
+import NotFound from "./pages/NotFound.tsx";
+import Dashboardv2 from "./pages/Dashboardv2.tsx";
 
 Amplify.configure(outputs);
 

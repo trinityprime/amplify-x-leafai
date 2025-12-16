@@ -1,6 +1,6 @@
 // src/components/CreateReportForm.tsx
 import { useState } from "react";
-import { createReport } from "../api/api";
+import { createReport } from "../../hooks/api";
 
 type Props = { onCreated?: (item: any) => void };
 
