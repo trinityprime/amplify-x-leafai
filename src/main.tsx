@@ -21,13 +21,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Authenticator hideSignUp>
         <Routes>
-          <Route path="/" element={<Layout/>}>
-            <Route index element={<App/>}/>
-            <Route path="dashboard" element={<Dashboard/>} />
-            <Route path="dashboard2" element={<Dashboardv2/>} />
-            <Route path="reports" element={<Reports/>} />
-            <Route path="new" element={<NewReport/>} />
-            <Route path="*" element={<NotFound/>} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<App />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="dashboard2" element={<Dashboardv2 />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="new" element={<NewReport />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </Authenticator>
