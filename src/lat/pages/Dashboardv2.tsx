@@ -9,7 +9,6 @@ import {
     CartesianGrid,
     BarChart,
     Bar,
-    Legend,
     ResponsiveContainer,
 } from "recharts";
 
@@ -26,7 +25,6 @@ function Dashboardv2() {
     const [filters, setFilters] = useState<Filters>({});
     const [summary, setSummary] = useState<any | null>(null);
     const [list, setList] = useState<any>({ items: [], count: 0, cursor: null });
-    const [loading, setLoading] = useState(false);
     const [loadingList, setLoadingList] = useState(false);
 
     function updateFilter<K extends keyof Filters>(k: K, v: any) {
@@ -34,13 +32,8 @@ function Dashboardv2() {
     }
 
     async function loadSummary(f: Filters) {
-        setLoading(true);
-        try {
-            const res = await getSummary(f);
-            setSummary(res);
-        } finally {
-            setLoading(false);
-        }
+        const res = await getSummary(f);
+        setSummary(res);
     }
 
     async function loadList(f: Filters, cursor?: string | null) {
