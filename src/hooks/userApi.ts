@@ -58,12 +58,21 @@ export function useUsers(user: any) {
             body: JSON.stringify({ username })
         }).then(fetchUsers);
 
+    const changeUserRole = (username: string, role: string) =>
+        fetch("https://k6se62981h.execute-api.ap-southeast-1.amazonaws.com/prod/user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, role })
+        }).then(fetchUsers);
+
+
     return {
         users,
         emailError,
         validateEmail,
         createUser,
         enableUser,
-        disableUser
+        disableUser,
+        changeUserRole
     };
 }

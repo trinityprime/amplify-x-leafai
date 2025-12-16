@@ -4,7 +4,7 @@ import {
 } from "@aws-amplify/ui-react";
 import { useState, useMemo } from "react";
 
-export default function UserTable({ users, onEnable, onDisable }: any) {
+export default function UserTable({ users, onEnable, onDisable, onChangeRole }: any) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
     const [search, setSearch] = useState("");
 
@@ -95,7 +95,24 @@ export default function UserTable({ users, onEnable, onDisable }: any) {
                                         ? <Badge variation="info">PENDING PASSWORD CHANGE</Badge>
                                         : <Badge variation="success">{u.status}</Badge>}
                                 </TableCell>
-                                <TableCell>{u.groups?.join(", ") || "user"}</TableCell>
+                                <TableCell>
+                                    <select
+                                        value={u.groups?.[0] || "USER"}
+                                        disabled={isSelf}
+                                        onChange={(e) => onChangeRole(u.username, e.target.value)}
+                                        style={{
+                                            padding: "4px 8px",
+                                            borderRadius: "6px",
+                                            border: "1px solid #ccc",
+                                            backgroundColor: isSelf ? "#f5f5f5" : "white",
+                                            cursor: isSelf ? "not-allowed" : "pointer"
+                                        }}
+                                    >
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="FIELD_TECH">Field Technician</option>
+                                        <option value="DATA_ANALYST">Data Analyst</option>
+                                    </select>
+                                </TableCell>
                                 <TableCell>{new Date(u.createdAt).toLocaleDateString("en-GB")}</TableCell>
                                 <TableCell>
                                     <Button

@@ -14,7 +14,8 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         validateEmail,
         createUser,
         enableUser,
-        disableUser
+        disableUser,
+        changeUserRole
     } = useUsers(user);
 
     return (
@@ -34,6 +35,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                     users={users}
                     onEnable={enableUser}
                     onDisable={disableUser}
+                    onChangeRole={changeUserRole}
                 />
             </Card>
         </>
