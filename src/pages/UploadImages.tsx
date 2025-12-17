@@ -78,6 +78,12 @@ function UploadImages() {
         }
     };
 
+    // Clear selected file
+    const handleClearFile = () => {
+        setSelectedFile(null);
+        setPreviewUrl("");
+    };
+
     // Handle file selection (edit mode)
     const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -343,18 +349,23 @@ function UploadImages() {
 
 
     return (
+    <div style={{
+        background: "linear-gradient(to bottom, white, #658147)",
+        minHeight: "100vh",
+        width: "100%"
+    }}>
         <main style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1>🍃 LeafAI - Pest Detection System</h1>
-          <p>Welcome, {user?.signInDetails?.loginId?.split("@")[0]}!</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+            <h1 style={{ fontSize: "32px" }}>🍃 LeafAI - Image Upload for AI Pest Detection System</h1>
+            <p>User: {user?.signInDetails?.loginId?.split("@")[0]}</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: "18px", fontWeight: "bold", color: "#2196F3" }}>
+                📊 Total Uploads: {allDetections.length}
+            </p>
+            </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <p style={{ fontSize: "18px", fontWeight: "bold", color: "#2196F3" }}>
-            📊 Total Uploads: {allDetections.length}
-          </p>
-        </div>
-      </div>
 
       {/* ADD THIS HERE - LOAD BY ID */}
       <div style={{ 
@@ -540,37 +551,80 @@ function UploadImages() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
         
         {/* LEFT PANEL - Upload */}
-        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px" }}>
-          <h2>📸 Upload & Label Image</h2>
+        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px", background: "white" }}>
+        <h2>📸 Upload & Label Image</h2>
           
-          {/* File Input */}
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-              Photo: <span style={{ color: "red" }}>*</span>
-            </label>
+        {/* File Input */}
+        <div style={{ marginBottom: "15px" }}>
+        <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+            Photo: <span style={{ color: "red" }}>*</span>
+        </label>
+        <label style={{ 
+            color: "#2196F3", 
+            textDecoration: "underline", 
+            cursor: "pointer",
+            display: "inline-block",
+            marginBottom: "10px"
+        }}>
+            {selectedFile ? `📎 ${selectedFile.name}` : "📁 Choose File"}
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              style={{ marginBottom: "10px", width: "100%" }}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
             />
-          </div>
+        </label>
+        {!selectedFile && <span style={{ color: "#666", marginLeft: "10px" }}>No file chosen</span>}
+        </div>
 
-          {/* Image Preview */}
-          {previewUrl && (
-            <div style={{ marginBottom: "15px", textAlign: "center" }}>
-              <img 
+        {/* Image Preview */}
+        {previewUrl && (
+        <div style={{ 
+            marginBottom: "15px", 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center",
+            width: "100%" 
+        }}>
+            <div style={{ position: "relative", display: "inline-block" }}>
+            <img 
                 src={previewUrl} 
                 alt="Preview" 
                 style={{ 
-                  maxWidth: "100%", 
-                  maxHeight: "300px", 
-                  border: "2px solid #4CAF50",
-                  borderRadius: "8px"
+                maxWidth: "100%", 
+                maxHeight: "300px", 
+                border: "2px solid #4CAF50",
+                borderRadius: "8px"
                 }}
-              />
+            />
+            {/* Cancel Button */}
+            <button
+                onClick={handleClearFile}
+                style={{
+                position: "absolute",
+                top: "-10px",
+                right: "-10px",
+                width: "30px",
+                height: "30px",
+                borderRadius: "50%",
+                background: "#f44336",
+                color: "white",
+                border: "2px solid white",
+                cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "bold",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
+                }}
+                title="Remove image"
+            >
+                ✕
+            </button>
             </div>
-          )}
+        </div>
+        )}
 
           {/* Farmer Details */}
           <div style={{ marginBottom: "15px" }}>
@@ -578,22 +632,22 @@ function UploadImages() {
               Farmer ID: <span style={{ color: "red" }}>*</span>
             </label>
             <input
-              type="text"
-              placeholder="Farmer ID"
-              value={farmerId}
-              onChange={(e) => setFarmerId(e.target.value)}
-              style={{ padding: "8px", width: "100%", marginBottom: "8px" }}
+            type="text"
+            placeholder="Farmer ID"
+            value={farmerId}
+            onChange={(e) => setFarmerId(e.target.value)}
+            style={{ padding: "8px", width: "100%", marginBottom: "8px", border: "1px solid black", borderRadius: "5px" }}
             />
             
             <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
               Location: <span style={{ color: "red" }}>*</span>
             </label>
             <input
-              type="text"
-              placeholder="Location (e.g., Field A-23)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              style={{ padding: "8px", width: "100%" }}
+            type="text"
+            placeholder="Location (e.g., Field A-23)"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            style={{ padding: "8px", width: "100%", border: "1px solid black", borderRadius: "5px" }}
             />
           </div>
 
@@ -664,7 +718,7 @@ function UploadImages() {
         </div>
 
         {/* RIGHT PANEL - Result */}
-        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px",minHeight: "400px",maxHeight: "calc(100vh - 300px)",overflowY: "auto"}}>
+        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px", background: "white", minHeight: "400px", maxHeight: "calc(100vh - 300px)", overflowY: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2>📊 Detection Result</h2>
             {currentDetection && !editMode && (
@@ -687,106 +741,130 @@ function UploadImages() {
           
           {currentDetection ? (
             <div>
-              {/* EDIT MODE */}
-              {editMode ? (
-                <div style={{
-                  background: "#fff3e0",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  marginBottom: "15px",
-                  border: "2px solid #FF9800"
+            {/* EDIT MODE */}
+            {editMode ? (
+            <div style={{
+                background: "#fff3e0",
+                padding: "15px",
+                borderRadius: "8px",
+                marginBottom: "15px",
+                border: "2px solid #FF9800"
+            }}>
+                <h3 style={{ margin: "0 0 15px 0", color: "#FF9800" }}>✏️ Editing Detection</h3>
+
+                {/* Edit Image */}
+                <div style={{ marginBottom: "15px" }}>
+                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                    Replace Image:
+                </label>
+                <label style={{ 
+                    color: "#FF9800", 
+                    textDecoration: "underline", 
+                    cursor: "pointer",
+                    display: "inline-block"
                 }}>
-                  <h3 style={{ margin: "0 0 15px 0", color: "#FF9800" }}>✏️ Editing Detection</h3>
-                  
-                  {/* Edit Image */}
-                  <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                      Replace Image (optional):
-                    </label>
+                    {editFile ? `📎 ${editFile.name}` : "📁 Choose New Image"}
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleEditFileSelect}
-                      style={{ width: "100%" }}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditFileSelect}
+                    style={{ display: "none" }}
                     />
-                    {editPreviewUrl && (
-                      <div style={{ marginTop: "10px", textAlign: "center" }}>
-                        <img 
-                          src={editPreviewUrl} 
-                          alt="New preview" 
-                          style={{ 
-                            maxWidth: "100%", 
-                            maxHeight: "200px",
-                            border: "2px solid #FF9800",
-                            borderRadius: "8px"
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Edit Farmer ID */}
-                  <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                      Farmer ID:
-                    </label>
-                    <input
-                      type="text"
-                      value={editFarmerId}
-                      onChange={(e) => setEditFarmerId(e.target.value)}
-                      style={{ padding: "8px", width: "100%" }}
+                </label>
+                {editPreviewUrl && (
+                    <div style={{ 
+                    marginTop: "10px", 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    alignItems: "center" 
+                    }}>
+                    <img 
+                        src={editPreviewUrl} 
+                        alt="New preview" 
+                        style={{ 
+                        maxWidth: "100%", 
+                        maxHeight: "200px",
+                        border: "2px solid #FF9800",
+                        borderRadius: "8px",
+                        display: "block"
+                        }}
                     />
-                  </div>
-
-                  {/* Edit Location */}
-                  <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                      Location:
-                    </label>
-                    <input
-                      type="text"
-                      value={editLocation}
-                      onChange={(e) => setEditLocation(e.target.value)}
-                      style={{ padding: "8px", width: "100%" }}
-                    />
-                  </div>
-
-                  {/* Save/Cancel Buttons */}
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={loading}
-                      style={{
-                        background: "#4CAF50",
-                        color: "white",
-                        padding: "10px",
-                        flex: "1",
-                        border: "none",
-                        borderRadius: "5px",
-                        cursor: "pointer",
-                        fontWeight: "bold"
-                      }}
-                    >
-                      💾 Save Changes
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={loading}
-                      style={{
-                        background: "#999",
-                        color: "white",
-                        padding: "10px",
-                        flex: "1",
-                        border: "none",
-                        borderRadius: "5px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      ❌ Cancel
-                    </button>
-                  </div>
+                    </div>
+                )}
                 </div>
-              ) : (
+
+                {/* Edit Farmer ID */}
+                <div style={{ marginBottom: "15px" }}>
+                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                    Farmer ID:
+                </label>
+                <input
+                    type="text"
+                    value={editFarmerId}
+                    onChange={(e) => setEditFarmerId(e.target.value)}
+                    style={{ 
+                    padding: "8px", 
+                    width: "100%", 
+                    border: "1px solid black", 
+                    borderRadius: "5px" 
+                    }}
+                />
+                </div>
+
+                {/* Edit Location */}
+                <div style={{ marginBottom: "15px" }}>
+                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
+                    Location:
+                </label>
+                <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    style={{ 
+                    padding: "8px", 
+                    width: "100%", 
+                    border: "1px solid black", 
+                    borderRadius: "5px" 
+                    }}
+                />
+                </div>
+
+                {/* Save/Cancel Buttons */}
+                <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                    onClick={handleSaveEdit}
+                    disabled={loading}
+                    style={{
+                    background: "#4CAF50",
+                    color: "white",
+                    padding: "10px",
+                    flex: "1",
+                    border: "none",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    fontWeight: "bold"
+                    }}
+                >
+                    💾 Save Changes
+                </button>
+                <button
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                    style={{
+                    background: "#999",
+                    color: "white",
+                    padding: "10px",
+                    flex: "1",
+                    border: "none",
+                    borderRadius: "5px",
+                    cursor: "pointer"
+                    }}
+                >
+                    ❌ Cancel
+                </button>
+                </div>
+            </div>
+            ) : (
                 /* NORMAL VIEW MODE */
                 <div style={{ 
                   background: currentDetection.label === "good" ? "#e8f5e9" : "#ffebee",
@@ -806,22 +884,30 @@ function UploadImages() {
                 </div>
               )}
 
-              {/* Show uploaded image */}
-              {currentDetection.photoUrl && !editMode && (
-                <div style={{ textAlign: "center", marginTop: "15px", marginBottom: "15px" }}>
-                  <h4>Uploaded Image:</h4>
-                  <img 
-                    src={currentDetection.photoUrl} 
-                    alt="Uploaded detection"
-                    style={{ 
-                      maxWidth: "100%", 
-                      maxHeight: "300px",
-                      borderRadius: "8px",
-                      border: "2px solid #ccc"
-                    }}
-                  />
-                </div>
-              )}
+            {/* Show uploaded image */}
+            {currentDetection.photoUrl && !editMode && (
+            <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center", 
+                justifyContent: "center",
+                marginTop: "15px", 
+                marginBottom: "15px" 
+            }}>
+                <h4 style={{ marginBottom: "10px" }}>Uploaded Image:</h4>
+                <img 
+                src={currentDetection.photoUrl} 
+                alt="Uploaded detection"
+                style={{ 
+                    maxWidth: "100%", 
+                    maxHeight: "300px",
+                    borderRadius: "8px",
+                    border: "2px solid #ccc",
+                    display: "block"
+                }}
+                />
+            </div>
+            )}
 
               {/* UPDATE LABEL BUTTONS */}
               {!editMode && (
@@ -915,21 +1001,9 @@ function UploadImages() {
         </div>
       </div>
 
-      <button 
-        onClick={signOut} 
-        style={{ 
-          marginTop: "30px",
-          background: "#333",
-          color: "white",
-          padding: "10px 20px",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
-        }}
-      >
-        Sign Out
-      </button>
+      
     </main>
+    </div>
     )
 }
 
