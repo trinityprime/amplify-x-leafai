@@ -1,1011 +1,302 @@
 import { useState, useEffect } from "react";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import {
-    createDetection,
-    updateDetection,
-    getDetection,
-    deleteDetection,
-    listAllDetections,
-    LeafDetection
-} from "../hooks/leafDetectionApi";
-
+import { createDetection, updateDetection, getDetection, deleteDetection, listAllDetections, LeafDetection } from "../hooks/leafDetectionApi";
 
 function UploadImages() {
-    const { user, signOut } = useAuthenticator();
-
-    // Upload state
+    const { user } = useAuthenticator();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string>("");
+    const [previewUrl, setPreviewUrl] = useState("");
     const [farmerId, setFarmerId] = useState("farmer-brian");
     const [location, setLocation] = useState("");
     const [selectedLabel, setSelectedLabel] = useState("unlabeled");
     const [selectedPestType, setSelectedPestType] = useState("unknown");
-
-    // Detection state
     const [currentDetection, setCurrentDetection] = useState<LeafDetection | null>(null);
     const [allDetections, setAllDetections] = useState<LeafDetection[]>([]);
     const [loading, setLoading] = useState(false);
-
-    // Search state
     const [searchId, setSearchId] = useState("");
     const [showHistory, setShowHistory] = useState(false);
     const [filterGood, setFilterGood] = useState(true);
     const [filterBad, setFilterBad] = useState(true);
-
-    // Edit mode state
     const [editMode, setEditMode] = useState(false);
     const [editFarmerId, setEditFarmerId] = useState("");
     const [editLocation, setEditLocation] = useState("");
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editPreviewUrl, setEditPreviewUrl] = useState("");
 
-    // Load all detections on mount
-    useEffect(() => {
-        loadAllDetections();
-    }, []);
+    useEffect(() => { loadAllDetections(); }, []);
 
-    // Load all detections for current user
     const loadAllDetections = async () => {
         try {
-            const userEmail = user?.signInDetails?.loginId;  // Get logged-in user email
-            const detections = await listAllDetections(userEmail);
+            const detections = await listAllDetections(user?.signInDetails?.loginId);
             setAllDetections(detections);
-            console.log("Loaded detections for", userEmail, ":", detections.length);
-        } catch (error) {
-            console.error("Failed to load detections:", error);
-        }
+        } catch (error) { console.error("Failed to load:", error); }
     };
 
-    // Filter detections based on selected filters
-    const getFilteredDetections = () => {
-        return allDetections.filter(detection => {
-            if (filterGood && detection.label === "good") return true;
-            if (filterBad && detection.label === "bad") return true;
-            return false;
-        });
-    };
+    const getFilteredDetections = () => allDetections.filter(d => (filterGood && d.label === "good") || (filterBad && d.label === "bad"));
 
-    // Handle file selection (upload form)
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
         const file = e.target.files?.[0];
         if (file) {
-            setSelectedFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setPreviewUrl(reader.result as string);
+                if (isEdit) { setEditFile(file); setEditPreviewUrl(reader.result as string); }
+                else { setSelectedFile(file); setPreviewUrl(reader.result as string); }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // Clear selected file
-    const handleClearFile = () => {
-        setSelectedFile(null);
-        setPreviewUrl("");
+    const clearForm = () => {
+        setSelectedFile(null); setPreviewUrl(""); setFarmerId("farmer-brian");
+        setLocation(""); setSelectedLabel("unlabeled"); setSelectedPestType("unknown");
     };
 
-    // Handle file selection (edit mode)
-    const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setEditFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setEditPreviewUrl(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    // Validation
-    const validateForm = (): boolean => {
-        if (!selectedFile) {
-            alert("❌ Please select a photo!");
-            return false;
-        }
-        if (!farmerId.trim()) {
-            alert("❌ Please enter Farmer ID!");
-            return false;
-        }
-        if (!location.trim()) {
-            alert("❌ Please enter Location!");
-            return false;
-        }
-        if (selectedLabel === "unlabeled") {
-            alert("❌ Please select a label (Good or Bad)!");
-            return false;
-        }
-        return true;
-    };
-
-    // Upload image with label
     const handleUpload = async () => {
-        if (!validateForm()) {
-            return;
+        if (!selectedFile || !farmerId.trim() || !location.trim() || selectedLabel === "unlabeled") {
+            alert("❌ Please fill all required fields!"); return;
         }
-
         setLoading(true);
         try {
             const reader = new FileReader();
             reader.onloadend = async () => {
-                const base64String = (reader.result as string).split(',')[1];
-
-                const detection = await createDetection({
-                    farmerId,
-                    content: `${selectedLabel} - ${selectedPestType}`,
-                    location,
-                    imageData: base64String,
-                    imageType: selectedFile!.type,
-                    userEmail: user?.signInDetails?.loginId  // ← ADD THIS
-                });
-
+                const base64 = (reader.result as string).split(',')[1];
+                const detection = await createDetection({ farmerId, content: `${selectedLabel} - ${selectedPestType}`, location, imageData: base64, imageType: selectedFile!.type, userEmail: user?.signInDetails?.loginId });
                 if (selectedLabel !== 'unlabeled') {
-                    const updated = await updateDetection(detection.id, {
-                        label: selectedLabel,
-                        pestType: selectedPestType
-                    });
+                    const updated = await updateDetection(detection.id, { label: selectedLabel, pestType: selectedPestType });
                     setCurrentDetection({ ...updated, photoUrl: previewUrl });
-                } else {
-                    setCurrentDetection({ ...detection, photoUrl: previewUrl });
-                }
-
-                // Reload all detections to update history
+                } else { setCurrentDetection({ ...detection, photoUrl: previewUrl }); }
                 await loadAllDetections();
-
-                alert("✅ Detection uploaded successfully!");
-
-                // Reset form but keep result
-                setSelectedFile(null);
-                setLocation("");
-                setSelectedLabel("unlabeled");
-                setSelectedPestType("unknown");
+                alert("✅ Uploaded!"); clearForm();
             };
             reader.readAsDataURL(selectedFile!);
-        } catch (error) {
-            console.error(error);
-            alert("❌ Failed to upload detection");
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { alert("❌ Upload failed"); }
+        finally { setLoading(false); }
     };
 
-    // Quick label buttons
-    const quickLabel = (label: string, pestType: string) => {
-        setSelectedLabel(label);
-        setSelectedPestType(pestType);
-    };
-
-    // Load existing detection by ID
     const handleLoadDetection = async () => {
-        if (!searchId.trim()) {
-            alert("❌ Please enter a Detection ID!");
-            return;
-        }
-
+        if (!searchId.trim()) { alert("❌ Enter Detection ID!"); return; }
         setLoading(true);
         try {
             const detection = await getDetection(searchId);
-            setCurrentDetection(detection);
-            setEditMode(false);
-
-            // Clear the upload form
-            setSelectedFile(null);
-            setPreviewUrl("");
-            setFarmerId("farmer-brian");
-            setLocation("");
-            setSelectedLabel("unlabeled");
-            setSelectedPestType("unknown");
-
-            alert("✅ Detection loaded!");
-        } catch (error) {
-            console.error(error);
-            alert("❌ Detection not found!");
-        } finally {
-            setLoading(false);
-        }
+            setCurrentDetection(detection); setEditMode(false); clearForm();
+            alert("✅ Loaded!");
+        } catch (error) { alert("❌ Not found!"); }
+        finally { setLoading(false); }
     };
-    
-    // Load detection from history list
+
     const handleSelectFromHistory = (detection: LeafDetection) => {
-        setCurrentDetection(detection);
-        // Don't set previewUrl - left panel is for NEW uploads only!
-        setShowHistory(false);
-        setEditMode(false);
-
-        // Clear the upload form
-        setSelectedFile(null);
-        setPreviewUrl("");
-        setFarmerId("farmer-brian");
-        setLocation("");
-        setSelectedLabel("unlabeled");
-        setSelectedPestType("unknown");
+        setCurrentDetection(detection); setShowHistory(false); setEditMode(false); clearForm();
     };
 
-    // Enter edit mode
-    const handleEnterEditMode = () => {
-        if (!currentDetection) return;
-
-        setEditFarmerId(currentDetection.farmerId);
-        setEditLocation(currentDetection.location || "");
-        setEditFile(null);
-        setEditPreviewUrl("");
-        setEditMode(true);
-    };
-
-    // Cancel edit mode
-    const handleCancelEdit = () => {
-        setEditMode(false);
-        setEditFile(null);
-        setEditPreviewUrl("");
-    };
-
-    // Save edits
     const handleSaveEdit = async () => {
-        if (!currentDetection) return;
-
-        if (!editFarmerId.trim() || !editLocation.trim()) {
-            alert("❌ Farmer ID and Location are required!");
-            return;
-        }
-
+        if (!currentDetection || !editFarmerId.trim() || !editLocation.trim()) { alert("❌ Fill required fields!"); return; }
         setLoading(true);
         try {
-            const updates: any = {
-                farmerId: editFarmerId,
-                location: editLocation
-            };
-
-            // If new image selected, include it
+            const updates: any = { farmerId: editFarmerId, location: editLocation };
             if (editFile) {
                 const reader = new FileReader();
                 reader.onloadend = async () => {
-                    const base64String = (reader.result as string).split(',')[1];
-                    updates.imageData = base64String;
+                    updates.imageData = (reader.result as string).split(',')[1];
                     updates.imageType = editFile.type;
-
                     const updated = await updateDetection(currentDetection.id, updates);
-                    setCurrentDetection(updated);
-                    setPreviewUrl(editPreviewUrl || updated.photoUrl);
-
-                    await loadAllDetections();
-                    setEditMode(false);
-                    alert("✅ Detection updated successfully!");
-                    setLoading(false);
+                    setCurrentDetection(updated); await loadAllDetections(); setEditMode(false);
+                    alert("✅ Updated!"); setLoading(false);
                 };
                 reader.readAsDataURL(editFile);
             } else {
-                // No new image, just update text fields
                 const updated = await updateDetection(currentDetection.id, updates);
-                setCurrentDetection(updated);
-
-                await loadAllDetections();
-                setEditMode(false);
-                alert("✅ Detection updated successfully!");
-                setLoading(false);
+                setCurrentDetection(updated); await loadAllDetections(); setEditMode(false);
+                alert("✅ Updated!"); setLoading(false);
             }
-        } catch (error) {
-            console.error(error);
-            alert("❌ Failed to update detection!");
-            setLoading(false);
-        }
+        } catch (error) { alert("❌ Update failed!"); setLoading(false); }
     };
 
-    // Update label of current detection
-    const handleUpdateLabel = async (newLabel: string, newPestType: string) => {
-        if (!currentDetection) {
-            alert("❌ No detection loaded!");
-            return;
-        }
-
-        if (!confirm(`Change label to: ${newLabel} (${newPestType})?`)) {
-            return;
-        }
-
+    const handleUpdateLabel = async (label: string, pestType: string) => {
+        if (!currentDetection || !confirm(`Change to ${label}?`)) return;
         setLoading(true);
         try {
-            const updated = await updateDetection(currentDetection.id, {
-                label: newLabel,
-                pestType: newPestType
-            });
+            const updated = await updateDetection(currentDetection.id, { label, pestType });
             setCurrentDetection({ ...updated, photoUrl: currentDetection.photoUrl });
-
-            await loadAllDetections();
-            alert("✅ Label updated successfully!");
-        } catch (error) {
-            console.error(error);
-            alert("❌ Failed to update label!");
-        } finally {
-            setLoading(false);
-        }
+            await loadAllDetections(); alert("✅ Updated!");
+        } catch (error) { alert("❌ Failed!"); }
+        finally { setLoading(false); }
     };
 
-    // Delete current detection
     const handleDelete = async () => {
-        if (!currentDetection) {
-            alert("❌ No detection to delete!");
-            return;
-        }
-
-        if (!confirm(`Are you sure you want to delete detection ${currentDetection.id}?`)) {
-            return;
-        }
-
+        if (!currentDetection || !confirm("Delete this detection?")) return;
         setLoading(true);
         try {
             await deleteDetection(currentDetection.id);
-            setCurrentDetection(null);
-            setPreviewUrl("");
-            setSearchId("");
-            setEditMode(false);
-
-            await loadAllDetections();
-            alert("✅ Detection deleted successfully!");
-        } catch (error) {
-            console.error(error);
-            alert("❌ Failed to delete detection!");
-        } finally {
-            setLoading(false);
-        }
+            setCurrentDetection(null); setPreviewUrl(""); setSearchId(""); setEditMode(false);
+            await loadAllDetections(); alert("✅ Deleted!");
+        } catch (error) { alert("❌ Failed!"); }
+        finally { setLoading(false); }
     };
 
+    const enterEditMode = () => {
+        if (!currentDetection) return;
+        setEditFarmerId(currentDetection.farmerId); setEditLocation(currentDetection.location || "");
+        setEditFile(null); setEditPreviewUrl(""); setEditMode(true);
+    };
+
+   
 
     return (
-    <div style={{
-        background: "linear-gradient(to bottom, white, #658147)",
-        minHeight: "100vh",
-        width: "100%"
-    }}>
-        <main style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-            <h1 style={{ fontSize: "32px" }}>🍃 LeafAI - Image Upload for AI Pest Detection System</h1>
-            <p>User: {user?.signInDetails?.loginId?.split("@")[0]}</p>
-            </div>
-            <div style={{ textAlign: "right" }}>
-            <p style={{ fontSize: "18px", fontWeight: "bold", color: "#2196F3" }}>
-                📊 Total Uploads: {allDetections.length}
-            </p>
-            </div>
-        </div>
-
-      {/* ADD THIS HERE - LOAD BY ID */}
-      <div style={{ 
-        marginTop: "20px",
-        border: "2px solid #FF9800",
-        borderRadius: "10px",
-        padding: "15px",
-        background: "#fff3e0"
-      }}>
-        <h3 style={{ margin: "0 0 10px 0" }}>🔍 Load by ID</h3>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <input
-            type="text"
-            placeholder="Enter Detection ID"
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            style={{ padding: "10px", flex: "1", border: "1px solid #ddd", borderRadius: "5px" }}
-          />
-          <button
-            onClick={handleLoadDetection}
-            disabled={loading}
-            style={{
-              background: "#FF9800",
-              color: "white",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
-          >
-            Load
-          </button>
-        </div>
-      </div>
-
-      {/* UPLOAD HISTORY DROPDOWN */}
-      <div style={{ 
-        marginTop: "20px", 
-        marginBottom: "20px",
-        border: "2px solid #2196F3",
-        borderRadius: "10px",
-        padding: "15px",
-        background: "#f0f8ff"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>📜 Upload History ({allDetections.length})</h3>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            style={{
-              background: "#2196F3",
-              color: "white",
-              padding: "8px 15px",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer"
-            }}
-          >
-            {showHistory ? "▲ Hide" : "▼ Show"} History
-          </button>
-        </div>
-
-        {showHistory && (
-          <div>
-            {/* FILTER CHECKBOXES */}
-            <div style={{ 
-              marginTop: "15px", 
-              marginBottom: "15px",
-              padding: "10px",
-              background: "white",
-              borderRadius: "5px",
-              border: "1px solid #ddd"
-            }}>
-              <strong>🔍 Filter by Label:</strong>
-              <div style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={filterGood}
-                    onChange={(e) => setFilterGood(e.target.checked)}
-                    style={{ cursor: "pointer" }}
-                  />
-                  <span style={{ 
-                    background: "#4CAF50", 
-                    color: "white", 
-                    padding: "3px 10px", 
-                    borderRadius: "3px",
-                    fontSize: "14px"
-                  }}>
-                    ✅ Good
-                  </span>
-                </label>
-                
-                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={filterBad}
-                    onChange={(e) => setFilterBad(e.target.checked)}
-                    style={{ cursor: "pointer" }}
-                  />
-                  <span style={{ 
-                    background: "#f44336", 
-                    color: "white", 
-                    padding: "3px 10px", 
-                    borderRadius: "3px",
-                    fontSize: "14px"
-                  }}>
-                    ❌ Bad
-                  </span>
-                </label>
-              </div>
-              <p style={{ fontSize: "12px", color: "#666", marginTop: "8px", marginBottom: 0 }}>
-                Showing: {getFilteredDetections().length} of {allDetections.length} uploads
-              </p>
-            </div>
-
-            {/* TABLE */}
-            <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-              {getFilteredDetections().length === 0 ? (
-                <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>
-                  No uploads match the selected filters
-                </p>
-              ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ background: "#e3f2fd" }}>
-                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>ID</th>
-                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Farmer</th>
-                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Location</th>
-                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Label</th>
-                      <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Date</th>
-                      <th style={{ padding: "10px", textAlign: "center", border: "1px solid #ddd" }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getFilteredDetections().map((detection) => (
-                      <tr key={detection.id} style={{ borderBottom: "1px solid #ddd" }}>
-                        <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
-                          {detection.id.substring(0, 20)}...
-                        </td>
-                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.farmerId}</td>
-                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>{detection.location || "N/A"}</td>
-                        <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                          <span style={{
-                            background: detection.label === "good" ? "#4CAF50" : "#f44336",
-                            color: "white",
-                            padding: "3px 8px",
-                            borderRadius: "3px",
-                            fontSize: "12px"
-                          }}>
-                            {detection.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: "8px", fontSize: "12px", border: "1px solid #ddd" }}>
-                          {new Date(detection.createdAt).toLocaleDateString()}
-                        </td>
-                        <td style={{ padding: "8px", textAlign: "center", border: "1px solid #ddd" }}>
-                          <button
-                            onClick={() => handleSelectFromHistory(detection)}
-                            style={{
-                              background: "#FF9800",
-                              color: "white",
-                              padding: "5px 10px",
-                              border: "none",
-                              borderRadius: "3px",
-                              cursor: "pointer",
-                              fontSize: "12px"
-                            }}
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
-        
-        {/* LEFT PANEL - Upload */}
-        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px", background: "white" }}>
-        <h2>📸 Upload & Label Image</h2>
-          
-        {/* File Input */}
-        <div style={{ marginBottom: "15px" }}>
-        <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-            Photo: <span style={{ color: "red" }}>*</span>
-        </label>
-        <label style={{ 
-            color: "#2196F3", 
-            textDecoration: "underline", 
-            cursor: "pointer",
-            display: "inline-block",
-            marginBottom: "10px"
-        }}>
-            {selectedFile ? `📎 ${selectedFile.name}` : "📁 Choose File"}
-            <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            style={{ display: "none" }}
-            />
-        </label>
-        {!selectedFile && <span style={{ color: "#666", marginLeft: "10px" }}>No file chosen</span>}
-        </div>
-
-        {/* Image Preview */}
-        {previewUrl && (
-        <div style={{ 
-            marginBottom: "15px", 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center",
-            width: "100%" 
-        }}>
-            <div style={{ position: "relative", display: "inline-block" }}>
-            <img 
-                src={previewUrl} 
-                alt="Preview" 
-                style={{ 
-                maxWidth: "100%", 
-                maxHeight: "300px", 
-                border: "2px solid #4CAF50",
-                borderRadius: "8px"
-                }}
-            />
-            {/* Cancel Button */}
-            <button
-                onClick={handleClearFile}
-                style={{
-                position: "absolute",
-                top: "-10px",
-                right: "-10px",
-                width: "30px",
-                height: "30px",
-                borderRadius: "50%",
-                background: "#f44336",
-                color: "white",
-                border: "2px solid white",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 5px rgba(0,0,0,0.3)"
-                }}
-                title="Remove image"
-            >
-                ✕
-            </button>
-            </div>
-        </div>
-        )}
-
-          {/* Farmer Details */}
-          <div style={{ marginBottom: "15px" }}>
-            <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-              Farmer ID: <span style={{ color: "red" }}>*</span>
-            </label>
-            <input
-            type="text"
-            placeholder="Farmer ID"
-            value={farmerId}
-            onChange={(e) => setFarmerId(e.target.value)}
-            style={{ padding: "8px", width: "100%", marginBottom: "8px", border: "1px solid black", borderRadius: "5px" }}
-            />
-            
-            <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-              Location: <span style={{ color: "red" }}>*</span>
-            </label>
-            <input
-            type="text"
-            placeholder="Location (e.g., Field A-23)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            style={{ padding: "8px", width: "100%", border: "1px solid black", borderRadius: "5px" }}
-            />
-          </div>
-
-          {/* Label Selection */}
-          <div style={{ marginBottom: "15px" }}>
-            <h3>🏷️ Select Label: <span style={{ color: "red" }}>*</span></h3>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button 
-                onClick={() => quickLabel("good", "healthy")}
-                style={{ 
-                  background: selectedLabel === "good" ? "#4CAF50" : "#ddd",
-                  color: selectedLabel === "good" ? "white" : "black",
-                  padding: "10px 15px",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  flex: "1"
-                }}
-              >
-                ✅ Good (Healthy)
-              </button>
-              <button 
-                onClick={() => quickLabel("bad", "unhealthy")}  // ← Change here
-                style={{ 
-                  background: selectedLabel === "bad" && selectedPestType === "unhealthy" ? "#f44336" : "#ddd",  // ← And here
-                  color: selectedLabel === "bad" && selectedPestType === "unhealthy" ? "white" : "black",  // ← And here
-                  padding: "10px 15px",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  flex: "1"
-                }}
-              >
-                ❌ Bad (Unhealthy)  
-              </button>
-            </div>
-            
-            <p style={{ marginTop: "10px", fontSize: "14px" }}>
-              Current: <strong>{selectedLabel}</strong> - <strong>{selectedPestType}</strong>
-            </p>
-          </div>
-
-          {/* Upload Button */}
-          <button
-            onClick={handleUpload}
-            disabled={loading}
-            style={{
-              background: "#2196F3",
-              color: "white",
-              padding: "15px",
-              width: "100%",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              opacity: loading ? 0.6 : 1
-            }}
-          >
-            {loading ? "⏳ Uploading..." : "📤 Upload & Save Detection"}
-          </button>
-          
-          <p style={{ fontSize: "12px", color: "#666", marginTop: "10px" }}>
-            <span style={{ color: "red" }}>*</span> Required fields
-          </p>
-
-
-        </div>
-
-        {/* RIGHT PANEL - Result */}
-        <div style={{ border: "2px solid #ddd", padding: "20px", borderRadius: "10px", background: "white", minHeight: "400px", maxHeight: "calc(100vh - 300px)", overflowY: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2>📊 Detection Result</h2>
-            {currentDetection && !editMode && (
-              <button
-                onClick={handleEnterEditMode}
-                style={{
-                  background: "#FF9800",
-                  color: "white",
-                  padding: "8px 15px",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-              >
-                ✏️ Edit
-              </button>
-            )}
-          </div>
-          
-          {currentDetection ? (
-            <div>
-            {/* EDIT MODE */}
-            {editMode ? (
-            <div style={{
-                background: "#fff3e0",
-                padding: "15px",
-                borderRadius: "8px",
-                marginBottom: "15px",
-                border: "2px solid #FF9800"
-            }}>
-                <h3 style={{ margin: "0 0 15px 0", color: "#FF9800" }}>✏️ Editing Detection</h3>
-
-                {/* Edit Image */}
-                <div style={{ marginBottom: "15px" }}>
-                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                    Replace Image:
-                </label>
-                <label style={{ 
-                    color: "#FF9800", 
-                    textDecoration: "underline", 
-                    cursor: "pointer",
-                    display: "inline-block"
-                }}>
-                    {editFile ? `📎 ${editFile.name}` : "📁 Choose New Image"}
-                    <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditFileSelect}
-                    style={{ display: "none" }}
-                    />
-                </label>
-                {editPreviewUrl && (
-                    <div style={{ 
-                    marginTop: "10px", 
-                    display: "flex", 
-                    justifyContent: "center", 
-                    alignItems: "center" 
-                    }}>
-                    <img 
-                        src={editPreviewUrl} 
-                        alt="New preview" 
-                        style={{ 
-                        maxWidth: "100%", 
-                        maxHeight: "200px",
-                        border: "2px solid #FF9800",
-                        borderRadius: "8px",
-                        display: "block"
-                        }}
-                    />
+        <div className="bg-gradient-to-b from-white to-green-600 min-h-screen w-full">
+            <main className="p-5 max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-5">
+                    <div>
+                        <h1 className="text-3xl font-bold">🍃 LeafAI - Pest Detection System</h1>
+                        <p className="text-gray-600">User: {user?.signInDetails?.loginId?.split("@")[0]}</p>
                     </div>
-                )}
+                    <p className="text-lg font-bold text-blue-500">📊 Total: {allDetections.length}</p>
                 </div>
 
-                {/* Edit Farmer ID */}
-                <div style={{ marginBottom: "15px" }}>
-                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                    Farmer ID:
-                </label>
-                <input
-                    type="text"
-                    value={editFarmerId}
-                    onChange={(e) => setEditFarmerId(e.target.value)}
-                    style={{ 
-                    padding: "8px", 
-                    width: "100%", 
-                    border: "1px solid black", 
-                    borderRadius: "5px" 
-                    }}
-                />
+                {/* Load by ID */}
+                <div className="mb-5 border-2 border-orange-400 rounded-lg p-4 bg-orange-50 flex gap-2">
+                    <input type="text" placeholder="Enter Detection ID" value={searchId} onChange={(e) => setSearchId(e.target.value)} className="p-2 flex-1 border border-gray-300 rounded" />
+                    <button onClick={handleLoadDetection} disabled={loading} className="bg-orange-500 text-black px-4 py-2 rounded cursor-pointer font-bold hover:bg-orange-600 disabled:opacity-60 border-none">Load</button>
                 </div>
 
-                {/* Edit Location */}
-                <div style={{ marginBottom: "15px" }}>
-                <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>
-                    Location:
-                </label>
-                <input
-                    type="text"
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    style={{ 
-                    padding: "8px", 
-                    width: "100%", 
-                    border: "1px solid black", 
-                    borderRadius: "5px" 
-                    }}
-                />
-                </div>
-
-                {/* Save/Cancel Buttons */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                    onClick={handleSaveEdit}
-                    disabled={loading}
-                    style={{
-                    background: "#4CAF50",
-                    color: "white",
-                    padding: "10px",
-                    flex: "1",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                    fontWeight: "bold"
-                    }}
-                >
-                    💾 Save Changes
-                </button>
-                <button
-                    onClick={handleCancelEdit}
-                    disabled={loading}
-                    style={{
-                    background: "#999",
-                    color: "white",
-                    padding: "10px",
-                    flex: "1",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer"
-                    }}
-                >
-                    ❌ Cancel
-                </button>
-                </div>
-            </div>
-            ) : (
-                /* NORMAL VIEW MODE */
-                <div style={{ 
-                  background: currentDetection.label === "good" ? "#e8f5e9" : "#ffebee",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  marginBottom: "15px"
-                }}>
-                  <h3 style={{ margin: "0 0 10px 0" }}>
-                    {currentDetection.label === "good" ? "✅ Healthy Leaf" : "❌ Diseased Leaf"}
-                  </h3>
-                  <p><strong>ID:</strong> {currentDetection.id}</p>
-                  <p><strong>Farmer:</strong> {currentDetection.farmerId}</p>
-                  <p><strong>Location:</strong> {currentDetection.location || "N/A"}</p>
-                  <p><strong>Pest Type:</strong> {currentDetection.pestType}</p>
-                  <p><strong>Label:</strong> {currentDetection.label}</p>
-                  <p><strong>Uploaded:</strong> {new Date(currentDetection.createdAt).toLocaleString()}</p>
-                </div>
-              )}
-
-            {/* Show uploaded image */}
-            {currentDetection.photoUrl && !editMode && (
-            <div style={{ 
-                display: "flex", 
-                flexDirection: "column", 
-                alignItems: "center", 
-                justifyContent: "center",
-                marginTop: "15px", 
-                marginBottom: "15px" 
-            }}>
-                <h4 style={{ marginBottom: "10px" }}>Uploaded Image:</h4>
-                <img 
-                src={currentDetection.photoUrl} 
-                alt="Uploaded detection"
-                style={{ 
-                    maxWidth: "100%", 
-                    maxHeight: "300px",
-                    borderRadius: "8px",
-                    border: "2px solid #ccc",
-                    display: "block"
-                }}
-                />
-            </div>
-            )}
-
-              {/* UPDATE LABEL BUTTONS */}
-              {!editMode && (
-                <>
-                  <div style={{ marginBottom: "15px" }}>
-                    <h4>🔄 Update Label:</h4>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button
-                        onClick={() => handleUpdateLabel("good", "healthy")}
-                        disabled={loading}
-                        style={{
-                          background: "#4CAF50",
-                          color: "white",
-                          padding: "10px",
-                          flex: "1",
-                          border: "none",
-                          borderRadius: "5px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        ✅ Mark as Good
-                      </button>
-                      <button
-                        onClick={() => handleUpdateLabel("bad", "unhealthy")}
-                        disabled={loading}
-                        style={{
-                          background: "#f44336",
-                          color: "white",
-                          padding: "10px",
-                          flex: "1",
-                          border: "none",
-                          borderRadius: "5px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        ❌ Mark as Bad
-                      </button>
+                {/* History */}
+                <div className="mb-5 border-2 border-blue-500 rounded-lg p-4 bg-blue-50">
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-semibold">📜 History ({allDetections.length})</h3>
+                        <button onClick={() => setShowHistory(!showHistory)} className="bg-blue-500 text-black px-4 py-2 rounded cursor-pointer font-bold hover:bg-blue-600 border-none">{showHistory ? "▲ Hide" : "▼ Show"}</button>
                     </div>
-                  </div>
+                    {showHistory && (
+                        <div className="mt-4">
+                            <div className="flex gap-4 mb-3">
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" checked={filterGood} onChange={(e) => setFilterGood(e.target.checked)} />
+                                    <span className="bg-green-500 text-white px-2 py-1 rounded text-sm">✅ Good</span>
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" checked={filterBad} onChange={(e) => setFilterBad(e.target.checked)} />
+                                    <span className="bg-red-500 text-white px-2 py-1 rounded text-sm">❌ Bad</span>
+                                </label>
+                            </div>
+                            <div className="max-h-60 overflow-y-auto">
+                                <table className="w-full border-collapse text-sm">
+                                    <thead><tr className="bg-blue-100">
+                                        {["ID", "Farmer", "Location", "Label", "Date", "Action"].map(h => <th key={h} className="p-2 border border-gray-300 text-left">{h}</th>)}
+                                    </tr></thead>
+                                    <tbody>
+                                        {getFilteredDetections().map((d) => (
+                                            <tr key={d.id}>
+                                                <td className="p-2 border border-gray-300 text-xs">{d.id.substring(0, 15)}...</td>
+                                                <td className="p-2 border border-gray-300">{d.farmerId}</td>
+                                                <td className="p-2 border border-gray-300">{d.location || "N/A"}</td>
+                                                <td className="p-2 border border-gray-300">
+                                                    <span className={`${d.label === "good" ? "bg-green-500" : "bg-red-500"} text-white px-2 py-1 rounded text-xs`}>{d.label}</span>
+                                                </td>
+                                                <td className="p-2 border border-gray-300 text-xs">{new Date(d.createdAt).toLocaleDateString()}</td>
+                                                <td className="p-2 border border-gray-300 text-center">
+                                                    <button onClick={() => handleSelectFromHistory(d)} className="bg-orange-500 text-white px-2 py-1 rounded text-xs">View</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-                  {/* DELETE BUTTON */}
-                  <button
-                    onClick={handleDelete}
-                    disabled={loading}
-                    style={{
-                      background: "#d32f2f",
-                      color: "white",
-                      padding: "12px",
-                      width: "100%",
-                      border: "none",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      fontWeight: "bold"
-                    }}
-                  >
-                    🗑️ Delete Detection
-                  </button>
-                </>
-              )}
+                {/* Two Panels */}
+                <div className="grid grid-cols-2 gap-5">
+                    {/* LEFT - Upload */}
+                    <div className="border-2 border-gray-300 p-5 rounded-lg bg-white">
+                        <h2 className="text-xl font-bold mb-4">📸 Upload Image</h2>
+                        <div className="mb-3">
+                            <label className="font-bold block mb-1">Photo: <span className="text-red-500">*</span></label>
+                            <label className="text-blue-500 underline cursor-pointer">
+                                {selectedFile ? `📎 ${selectedFile.name}` : "📁 Choose File"}
+                                <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e)} className="hidden" />
+                            </label>
+                        </div>
+                        {previewUrl && (
+                            <div className="mb-3 flex justify-center">
+                                <div className="relative inline-block">
+                                    <img src={previewUrl} alt="Preview" className="max-h-48 border-2 border-green-500 rounded-lg" />
+                                    <button onClick={() => { setSelectedFile(null); setPreviewUrl(""); }} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-sm flex items-center justify-center">✕</button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="mb-3">
+                            <label className="font-bold block mb-1">Farmer ID: <span className="text-red-500">*</span></label>
+                            <input type="text" value={farmerId} onChange={(e) => setFarmerId(e.target.value)} className="p-2 w-full border border-black rounded mb-2" />
+                            <label className="font-bold block mb-1">Location: <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="e.g., Field A-23" value={location} onChange={(e) => setLocation(e.target.value)} className="p-2 w-full border border-black rounded" />
+                        </div>
+                        <div className="mb-3">
+                            <label className="font-bold block mb-1">Label: <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                                <button onClick={() => { setSelectedLabel("good"); setSelectedPestType("healthy"); }} className={`flex-1 p-2 rounded ${selectedLabel === "good" ? "bg-green-500 text-white" : "bg-gray-200"}`}>✅ Good</button>
+                                <button onClick={() => { setSelectedLabel("bad"); setSelectedPestType("unhealthy"); }} className={`flex-1 p-2 rounded ${selectedLabel === "bad" ? "bg-red-500 text-white" : "bg-gray-200"}`}>❌ Bad</button>
+                            </div>
+                        </div>
+                        <button onClick={handleUpload} disabled={loading} className="w-full p-3 bg-blue-500 text-black rounded cursor-pointer font-bold hover:bg-blue-600 disabled:opacity-60 border-none">{loading ? "⏳ Uploading..." : "📤 Upload"}</button>
+                    </div>
 
-              <details style={{ marginTop: "15px" }}>
-                <summary style={{ cursor: "pointer", fontWeight: "bold" }}>
-                  View Raw Data
-                </summary>
-                <pre style={{ 
-                  background: "#f5f5f5", 
-                  padding: "10px", 
-                  borderRadius: "5px",
-                  overflow: "auto",
-                  fontSize: "12px"
-                }}>
-                  {JSON.stringify(currentDetection, null, 2)}
-                </pre>
-              </details>
-            </div>
-          ) : (
-            <div style={{ 
-              textAlign: "center", 
-              padding: "50px", 
-              color: "#999",
-              minHeight: "300px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center"
-            }}>
-              <p>📭 No detection selected</p>
-              <p>Upload an image, load by ID, or select from history</p>
-            </div>
-          )}
+                    {/* RIGHT - Result */}
+                    <div className="border-2 border-gray-300 p-5 rounded-lg bg-white min-h-96 overflow-y-auto">
+                        <div className="flex justify-between items-center mb-3">
+                            <h2 className="text-xl font-bold">📊 Result</h2>
+                            <button onClick={enterEditMode} className="bg-orange-500 text-black px-4 py-2 rounded cursor-pointer font-bold hover:bg-orange-600 border-none">✏️ Edit</button>
+                        </div>
+                        {currentDetection ? (
+                            <div>
+                                {editMode ? (
+                                    <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-400 mb-3">
+                                        <h3 className="font-bold text-orange-500 mb-3">✏️ Editing</h3>
+                                        <label className="text-orange-500 underline cursor-pointer block mb-3">
+                                            {editFile ? `📎 ${editFile.name}` : "📁 Replace Image"}
+                                            <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e, true)} className="hidden" />
+                                        </label>
+                                        {editPreviewUrl && <img src={editPreviewUrl} alt="Preview" className="max-h-32 rounded mb-3 mx-auto block" />}
+                                        <input type="text" value={editFarmerId} onChange={(e) => setEditFarmerId(e.target.value)} placeholder="Farmer ID" className="p-2 w-full border border-black rounded mb-2" />
+                                        <input type="text" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="Location" className="p-2 w-full border border-black rounded mb-3" />
+                                        <div className="flex gap-2">
+                                            <button onClick={handleSaveEdit} disabled={loading} className="flex-1 bg-green-500 text-black p-2 rounded cursor-pointer font-bold hover:bg-green-600 disabled:opacity-60 border-none">💾 Save</button>
+                                            <button onClick={() => setEditMode(false)} className="flex-1 bg-gray-500 text-white p-2 rounded">❌ Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className={`p-4 rounded-lg mb-3 ${currentDetection.label === "good" ? "bg-green-50" : "bg-red-50"}`}>
+                                        <h3 className="font-bold mb-2">{currentDetection.label === "good" ? "✅ Healthy" : "❌ Diseased"}</h3>
+                                        <p><b>ID:</b> {currentDetection.id}</p>
+                                        <p><b>Farmer:</b> {currentDetection.farmerId}</p>
+                                        <p><b>Location:</b> {currentDetection.location || "N/A"}</p>
+                                        <p><b>Label:</b> {currentDetection.label}</p>
+                                        <p><b>Date:</b> {new Date(currentDetection.createdAt).toLocaleString()}</p>
+                                    </div>
+                                )}
+                                {currentDetection.photoUrl && !editMode && (
+                                    <img src={currentDetection.photoUrl} alt="Detection" className="max-h-48 rounded-lg border-2 border-gray-300 mx-auto block mb-3" />
+                                )}
+                                {!editMode && (
+                                    <>
+                                        <div className="flex gap-2 mb-3">
+                                            <button onClick={() => handleUpdateLabel("good", "healthy")} disabled={loading} className="flex-1 bg-green-500 text-black p-2 rounded cursor-pointer font-bold hover:bg-green-600 disabled:opacity-60 border-none">✅ Good</button>
+                                            <button onClick={() => handleUpdateLabel("bad", "unhealthy")} disabled={loading} className="flex-1 bg-red-500 text-black p-2 rounded cursor-pointer font-bold hover:bg-red-600 disabled:opacity-60 border-none">❌ Bad</button>
+                                        </div>
+                                        <button onClick={handleDelete} disabled={loading} className="w-full bg-red-700 text-black p-3 rounded cursor-pointer font-bold hover:bg-red-800 disabled:opacity-60 border-none">🗑️ Delete</button>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center text-gray-400 py-20">
+                                <p>📭 No detection selected</p>
+                                <p>Upload, load by ID, or select from history</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
         </div>
-      </div>
-
-      
-    </main>
-    </div>
-    )
+    );
 }
 
-export default UploadImages
+export default UploadImages;
