@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSummary, listReports } from "../hooks/api";
+import { getSummary, listReports } from "../../hooks/farmReportAPI";
+import CreateReportForm from "../../components/FarmReport/CreateReportForm";
 import {
     LineChart,
     Line,
@@ -9,6 +10,7 @@ import {
     CartesianGrid,
     BarChart,
     Bar,
+    Legend,
     ResponsiveContainer,
 } from "recharts";
 
@@ -21,7 +23,7 @@ type Filters = {
     to?: string; // ISO
 };
 
-function Dashboardv2() {
+export default function Dashboard() {
     const [filters, setFilters] = useState<Filters>({});
     const [summary, setSummary] = useState<any | null>(null);
     const [list, setList] = useState<any>({ items: [], count: 0, cursor: null });
@@ -39,35 +41,12 @@ function Dashboardv2() {
     async function loadList(f: Filters, cursor?: string | null) {
         setLoadingList(true);
         try {
-            const res = await listReports({
-                ...f,
-                limit: 50,
-                cursor: cursor ?? undefined,
-            });
-
-            // Log once to verify shape
-            console.log();
-
-            // Some Lambdas wrap the payload as { body: "JSON" } or { data: {...} }
-            const payload =
-                typeof res === "string"
-                    ? JSON.parse(res)
-                    : res?.body && typeof res.body === "string"
-                        ? JSON.parse(res.body)
-                        : res?.data || res;
+            const res = await listReports({ ...f, limit: 50, cursor: cursor ?? undefined });
             setList({
-                items: Array.isArray(payload?.items) ? payload.items : [],
-                count:
-                    typeof payload?.count === "number"
-                        ? payload.count
-                        : Array.isArray(payload?.items)
-                            ? payload.items.length
-                            : 0,
-                cursor: payload?.cursor ?? null,
+                items: Array.isArray(res.items) ? res.items : [],
+                count: typeof res.count === "number" ? res.count : 0,
+                cursor: res.cursor ?? null,
             });
-        } catch (e: any) {
-            console.error("listReports failed:", e);
-            setList({ items: [], count: 0, cursor: null });
         } finally {
             setLoadingList(false);
         }
@@ -92,13 +71,11 @@ function Dashboardv2() {
     );
     const timeseries = summary?.timeseries || [];
 
-
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+        <div style={{ display: "grid", gap: 16, padding: 16 }}>
             <h2>Pest Pattern Dashboard</h2>
 
             {/* Filters */}
-
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input
                     placeholder="farmZone"
@@ -160,26 +137,22 @@ function Dashboardv2() {
                 <button onClick={() => setFilters({})}>Clear</button>
             </div>
 
-            {/* charts */}
-
+            {/* Charts */}
             <div
                 style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 32,
+                    gap: 16,
                     minWidth: 0,
                 }}
             >
                 <div
                     style={{
-                        height: 400,
+                        height: 300,
                         border: "1px solid #eee",
-                        padding: "1rem",
+                        padding: 8,
                         width: "100%",
                         minWidth: 0,
-                        display: "flex",
-                        flexDirection: "column"
-
                     }}
                 >
                     <h4>Trends by day</h4>
@@ -196,13 +169,11 @@ function Dashboardv2() {
 
                 <div
                     style={{
-                        height: 400,
+                        height: 300,
                         border: "1px solid #eee",
-                        padding: "1rem",
+                        padding: 8,
                         width: "100%",
                         minWidth: 0,
-                        display: "flex",
-                        flexDirection: "column"
                     }}
                 >
                     <h4>By Zone</h4>
@@ -219,13 +190,11 @@ function Dashboardv2() {
 
                 <div
                     style={{
-                        height: 400,
+                        height: 300,
                         border: "1px solid #eee",
-                        padding: "1rem",
+                        padding: 8,
                         width: "100%",
                         minWidth: 0,
-                        display: "flex",
-                        flexDirection: "column"
                     }}
                 >
                     <h4>By Category</h4>
@@ -235,6 +204,7 @@ function Dashboardv2() {
                             <XAxis dataKey="name" />
                             <YAxis allowDecimals={false} />
                             <Tooltip />
+                            <Legend />
                             <Bar dataKey="count" fill="#e67" />
                         </BarChart>
                     </ResponsiveContainer>
@@ -278,13 +248,18 @@ function Dashboardv2() {
                         disabled={loadingList}
                         style={{ marginTop: 8 }}
                     >
-                        {loadingList && <div style={{ marginBottom: 8 }}>Loading reports…</div>}
+                        {loadingList ? "Loading..." : "Load more"}
                     </button>
                 )}
             </div>
 
+            {/* Create form */}
+            <CreateReportForm
+                onCreated={() => {
+                    loadSummary(filters);
+                    loadList(filters);
+                }}
+            />
         </div>
-    )
+    );
 }
-
-export default Dashboardv2

@@ -1,13 +1,17 @@
 // src/components/CreateReportForm.tsx
-import { useState } from "react";
-import { createReport } from "../../hooks/api";
+import { useEffect, useState } from "react";
+import { createReport } from "../../hooks/farmReportAPI";
 
-type Props = { onCreated?: (item: any) => void };
+type Props = {
+  tentId?: string;
+  onChangeTent?: (v: string) => void;
+  onCreated?: (item: any) => void;
+};
 
-export default function CreateReportForm({ onCreated }: Props) {
+export default function CreateReportForm({ tentId, onChangeTent, onCreated }: Props) {
   const [form, setForm] = useState({
-    farmZone: "",
-    location: "",
+    tentId: tentId ?? "",
+    rackId: "",
     severity: 1,
     description: "",
     problemCategory: "pest infestation",
@@ -16,8 +20,13 @@ export default function CreateReportForm({ onCreated }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setForm((f) => ({ ...f, tentId: tentId ?? "" }));
+  }, [tentId]);
+
   function update<K extends keyof typeof form>(k: K, v: any) {
     setForm((f) => ({ ...f, [k]: v }));
+    if (k === "tentId") onChangeTent?.(v);
   }
 
   async function submit(e: React.FormEvent) {
@@ -25,19 +34,21 @@ export default function CreateReportForm({ onCreated }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await createReport({
+      const payload = {
         ...form,
         severity: Number(form.severity),
-      });
+      };
+      const res = await createReport(payload);
       onCreated?.(res.item);
       setForm({
-        farmZone: "",
-        location: "",
+        tentId: "",
+        rackId: "",
         severity: 1,
         description: "",
         problemCategory: "pest infestation",
         status: "unresolved",
       });
+      onChangeTent?.("");
     } catch (err: any) {
       setError(err.message || "Failed to create");
     } finally {
@@ -50,15 +61,15 @@ export default function CreateReportForm({ onCreated }: Props) {
       <h3>Create Report</h3>
       {error && <div style={{ color: "red" }}>{error}</div>}
       <input
-        placeholder="Farm zone (e.g., farm-1)"
-        value={form.farmZone}
-        onChange={(e) => update("farmZone", e.target.value)}
+        placeholder="Tent Id (e.g., tent-1)"
+        value={form.tentId}
+        onChange={(e) => update("tentId", e.target.value)}
         required
       />
       <input
-        placeholder="Location (e.g., field-A)"
-        value={form.location}
-        onChange={(e) => update("location", e.target.value)}
+        placeholder="Location (e.g., rack-2)"
+        value={form.rackId}
+        onChange={(e) => update("rackId", e.target.value)}
         required
       />
       <input
