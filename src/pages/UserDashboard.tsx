@@ -4,7 +4,7 @@ import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
 
 type UserDashboardProps = {
-    user: any; // or AuthUser if you want stricter typing
+    user: any;
 };
 
 export default function UserDashboard({ user }: UserDashboardProps) {
