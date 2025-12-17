@@ -204,6 +204,7 @@ function UploadImages() {
             setLoading(false);
         }
     };
+    
     // Load detection from history list
     const handleSelectFromHistory = (detection: LeafDetection) => {
         setCurrentDetection(detection);
