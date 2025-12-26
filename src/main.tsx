@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Dashboardv2 from "./pages/FarmReport/Dashboardv2.tsx";
 import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
+import LeafHealthPredictor from "./pages/LeafModel.tsx";
 
 Amplify.configure(outputs);
 
@@ -28,13 +29,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<App />} />
-                <Route path="userdashboard" element={<UserDashboard user={user} />} />
+                <Route
+                  path="userdashboard"
+                  element={<UserDashboard user={user} />}
+                />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="dashboard2" element={<Dashboardv2 />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="new" element={<NewReport />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path="uploadimg" element={<UploadImages />} />
+                <Route path="leaf-model" element={<LeafHealthPredictor />} />
               </Route>
             </Routes>
           );

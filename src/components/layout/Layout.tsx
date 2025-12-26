@@ -15,6 +15,7 @@ export default function Layout() {
         <Link to="/reports">Reports</Link>
         <Link to="/new">New Report</Link>
         <Link to="/uploadimg">Upload Image</Link>
+        <Link to="/leaf-model">Leaf AI Model</Link>
 
         <button
           onClick={signOut}
