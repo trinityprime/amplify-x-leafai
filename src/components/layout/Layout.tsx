@@ -1,32 +1,69 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 
 export default function Layout() {
   const { signOut } = useAuthenticator();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const navLinks = [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Reports", path: "/reports" },
+    { name: "New Report", path: "/new" },
+    { name: "Leaf AI", path: "/leaf-model" },
+    { name: "Upload", path: "/uploadimg" },
+  ];
 
   return (
-    <div className="flex flex-col">
-      <nav className="flex gap-5 sticky top-0 z-50 p-3 border-b-1 border-black bg-white items-center">
-        <Link to="/">Home</Link>
-        <div className="grow" />
-        <Link to="/userdashboard">User Dashboard</Link>
-        <Link to="/dashboard">Dashboard</Link>
-        <Link to="/dashboard2">Dashboard v2</Link>
-        <Link to="/reports">Reports</Link>
-        <Link to="/new">New Report</Link>
-        <Link to="/uploadimg">Upload Image</Link>
-        <Link to="/leaf-model">Leaf AI Model</Link>
+    <div className="min-h-screen bg-gray-50">
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center gap-8">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold">
+                  L
+                </div>
+                <span className="text-xl font-bold text-gray-900 tracking-tight">
+                  LeafAI
+                </span>
+              </Link>
 
-        <button
-          onClick={signOut}
-          className="ml-4 px-3 py-1 border border-black hover:bg-black hover:text-white cursor-pointer"
-        >
-          Logout
-        </button>
+              <div className="hidden md:flex items-center gap-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(link.path)
+                        ? "bg-gray-100 text-green-700"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={signOut}
+                className="text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
       </nav>
 
-      <main style={{ padding: 16 }}>
-        <Outlet />
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
