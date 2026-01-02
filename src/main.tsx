@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Authenticator } from "@aws-amplify/ui-react";
+import { Authenticator, View, Text, Heading } from "@aws-amplify/ui-react";
+import "@aws-amplify/ui-react/styles.css";
 import App from "./App.tsx";
 import "./index.css";
 import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
-import "@aws-amplify/ui-react/styles.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/layout/Layout.tsx";
 import Dashboard from "./pages/FarmReport/Dashboard.tsx";
@@ -19,10 +19,40 @@ import LeafHealthPredictor from "./pages/LeafModel.tsx";
 
 Amplify.configure(outputs);
 
+const components = {
+  Header() {
+    return (
+      <View textAlign="center" padding="large">
+        <div className="flex justify-center items-center gap-2 mb-2">
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+            L
+          </div>
+          <Heading
+            level={3}
+            className="text-slate-800 font-extrabold tracking-tight"
+          >
+            LeafCorp AI
+          </Heading>
+        </div>
+        <Text color="gray">Enterprise Agricultural Management</Text>
+      </View>
+    );
+  },
+  Footer() {
+    return (
+      <View textAlign="center" padding="medium">
+        <Text fontSize="small" color="gray">
+          &copy; {new Date().getFullYear()} LeafCorp. All rights reserved.
+        </Text>
+      </View>
+    );
+  },
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Authenticator hideSignUp>
+      <Authenticator components={components} hideSignUp>
         {(authData) => {
           const { user } = authData;
           return (

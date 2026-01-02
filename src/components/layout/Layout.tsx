@@ -26,7 +26,7 @@ export default function Layout() {
                   L
                 </div>
                 <span className="text-xl font-bold text-gray-900 tracking-tight">
-                  LeafAI
+                  LeafCorp AI
                 </span>
               </Link>
 

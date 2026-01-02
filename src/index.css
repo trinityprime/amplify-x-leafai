@@ -1,2 +1,33 @@
 @import "tailwindcss";
 @import "@aws-amplify/ui-react/styles.css";
+
+[data-amplify-authenticator] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  background-image: radial-gradient(#10b981 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+/* 2. Style the internal Amplify components */
+:root {
+  --amplify-colors-brand-primary-10: #ecfdf5;
+  --amplify-colors-brand-primary-80: #059669;
+  --amplify-colors-brand-primary-90: #047857;
+  --amplify-colors-brand-primary-100: #064e3b;
+
+  --amplify-radii-medium: 12px;
+  --amplify-components-button-primary-background-color: var(
+    --amplify-colors-brand-primary-80
+  );
+  --amplify-components-fieldcontrol-focus-box-shadow: 0 0 0 2px #d1fae5;
+}
+
+.amplify-authenticator__column {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  background: white;
+}
