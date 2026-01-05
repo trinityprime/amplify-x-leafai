@@ -16,6 +16,7 @@ import Dashboardv2 from "./pages/FarmReport/Dashboardv2.tsx";
 import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
 import LeafHealthPredictor from "./pages/LeafModel.tsx";
+import RoleGuard from "./components/RoleGuard.tsx";
 
 Amplify.configure(outputs);
 
@@ -59,17 +60,64 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<App />} />
+
+                {/* ADMIN ONLY */}
                 <Route
                   path="userdashboard"
-                  element={<UserDashboard user={user} />}
+                  element={
+                    <RoleGuard allowedRoles={["ADMIN"]}>
+                      <UserDashboard user={user} />
+                    </RoleGuard>
+                  }
                 />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="dashboard2" element={<Dashboardv2 />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="new" element={<NewReport />} />
-                <Route path="*" element={<NotFound />} />
-                <Route path="uploadimg" element={<UploadImages />} />
+
+                {/* DATA ANALYST */}
+                <Route
+                  path="dashboard"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Dashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="dashboard2"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Dashboardv2 />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="reports"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Reports />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="new"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <NewReport />
+                    </RoleGuard>
+                  }
+                />
+
+                {/* FIELD TECHNICIAN */}
+                <Route
+                  path="uploadimg"
+                  element={
+                    <RoleGuard allowedRoles={["FIELD_TECH"]}>
+                      <UploadImages />
+                    </RoleGuard>
+                  }
+                />
+
+                {/* PUBLIC */}
                 <Route path="leaf-model" element={<LeafHealthPredictor />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
           );

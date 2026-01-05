@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Mail, ShieldCheck } from "lucide-react";
+import { UserPlus, Mail, ShieldCheck, AlertCircle } from "lucide-react";
 
 export default function CreateUserForm({ onCreate, validate, error }: any) {
   const [email, setEmail] = useState("");
@@ -11,62 +11,95 @@ export default function CreateUserForm({ onCreate, validate, error }: any) {
     setRole("ADMIN");
   };
 
-  return (
-    <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row gap-6 items-start">
-      <div className="flex flex-col flex-1 gap-2 w-full relative">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <Mail size={14} className="text-emerald-600" />
-          User Email
-        </label>
-        <input
-          type="email"
-          placeholder="ryan@company.com"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            validate(e.target.value);
-          }}
-          className={`w-full rounded-lg border px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-4 ${
-            error
-              ? "border-red-300 focus:ring-red-100 text-red-900"
-              : "border-slate-200 focus:border-emerald-500 focus:ring-emerald-50/50"
-          }`}
-        />
+  const isInvalid = !!error || !email;
 
-        {error && (
-          <p className="absolute -bottom-5 left-0 text-[10px] font-bold text-red-500 uppercase tracking-tight">
-            {error}
-          </p>
-        )}
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Email Field */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+          <Mail size={13} className="text-emerald-600" />
+          Email Address
+        </label>
+        <div className="relative group">
+          <input
+            type="email"
+            placeholder="name@leafcorp.ai"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              validate(e.target.value);
+            }}
+            className={`w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none focus:ring-4 ${
+              error
+                ? "border-red-200 bg-red-50 text-red-900 focus:ring-red-100"
+                : "border-slate-200 bg-slate-50 group-hover:bg-white focus:bg-white focus:border-emerald-500 focus:ring-emerald-500/10"
+            }`}
+          />
+          {error && (
+            <div className="flex items-center gap-1.5 mt-2 px-1 text-red-500">
+              <AlertCircle size={12} />
+              <p className="text-[10px] font-bold uppercase tracking-tight leading-none">
+                {error}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2 w-full md:w-64">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <ShieldCheck size={14} className="text-emerald-600" />
+      {/* Role Selection */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+          <ShieldCheck size={13} className="text-emerald-600" />
           Access Level
         </label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50/50 outline-none transition-all cursor-pointer"
-        >
-          <option value="ADMIN">Admin</option>
-          <option value="FIELD_TECH">Field Technician</option>
-          <option value="DATA_ANALYST">Analyst</option>
-        </select>
+        <div className="relative">
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all cursor-pointer group-hover:bg-white"
+          >
+            <option value="ADMIN">System Administrator</option>
+            <option value="FIELD_TECH">Field Technician</option>
+            <option value="DATA_ANALYST">Data Analyst</option>
+          </select>
+          {/* Custom Select Arrow */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
 
-      <div className="pt-6 w-full md:w-auto">
-        <button
-          onClick={handleCreate}
-          disabled={!!error || !email}
-          className="flex items-center justify-center gap-2 h-[42px] w-full md:w-auto rounded-lg bg-emerald-600 px-8 text-sm font-bold text-white transition-all 
-                    hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 shadow-sm"
-        >
-          <UserPlus size={18} />
-          Create
-        </button>
+      {/* Info Card */}
+      <div className="bg-emerald-50/50 rounded-xl p-4 border border-emerald-100">
+        <p className="text-[11px] text-emerald-800 leading-relaxed font-medium">
+          New users will receive an invitation email and will be required to
+          change their password on first login.
+        </p>
       </div>
+
+      {/* Action Button */}
+      <button
+        onClick={handleCreate}
+        disabled={isInvalid}
+        className="flex items-center justify-center gap-2 py-4 w-full rounded-2xl bg-slate-900 text-white font-black text-sm transition-all 
+                   hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 disabled:bg-slate-100 disabled:text-slate-400 disabled:translate-y-0 shadow-lg shadow-slate-200"
+      >
+        <UserPlus size={18} />
+        Provision Account
+      </button>
     </div>
   );
 }

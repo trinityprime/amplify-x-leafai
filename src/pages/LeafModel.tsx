@@ -1,4 +1,13 @@
 import { useState, useEffect } from "react";
+import {
+  Upload,
+  Activity,
+  History,
+  Info,
+  CheckCircle,
+  AlertTriangle,
+  X,
+} from "lucide-react";
 
 export default function PlantUpload() {
   const [file, setFile] = useState<File | null>(null);
@@ -6,7 +15,13 @@ export default function PlantUpload() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Handle image preview
+  // 1. Initialize history from sessionStorage
+  const [history, setHistory] = useState<any[]>(() => {
+    const saved = sessionStorage.getItem("plant_history");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Cleanup preview URL
   useEffect(() => {
     if (!file) {
       setPreview(null);
@@ -17,10 +32,15 @@ export default function PlantUpload() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
 
+  // 2. Save to sessionStorage whenever history changes
+  useEffect(() => {
+    sessionStorage.setItem("plant_history", JSON.stringify(history));
+  }, [history]);
+
   const handleUpload = async () => {
     if (!file) return;
     setLoading(true);
-    setResult(null); // Clear previous results
+    setResult(null);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
@@ -36,9 +56,21 @@ export default function PlantUpload() {
         );
         const data = await res.json();
         setResult(data);
+
+        const label = data[0] > data[1] ? "Healthy" : "Unhealthy";
+        setHistory((prev) => [
+          {
+            label,
+            date: new Date().toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            confidence: data[0] > data[1] ? data[0] : data[1],
+          },
+          ...prev.slice(0, 4),
+        ]);
       } catch (err) {
         console.error("Upload error:", err);
-        alert("Failed to connect to the SageMaker endpoint.");
       } finally {
         setLoading(false);
       }
@@ -47,125 +79,181 @@ export default function PlantUpload() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
-        Plant Health AI
-      </h2>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* LEFT: Upload & Input Area */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                <Activity size={20} />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+                Image Analysis
+              </h2>
+            </div>
 
-      {/* Upload Area */}
-      <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 transition-hover hover:border-green-500">
-        {preview ? (
-          <img
-            src={preview}
-            alt="Preview"
-            className="max-h-64 rounded-lg mb-4 shadow-sm"
-          />
-        ) : (
-          <div className="py-10 text-gray-400 text-center">
-            <p>No image selected</p>
-          </div>
-        )}
-
-        <input
-          type="file"
-          accept="image/*"
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-          onChange={(e) => {
-            setFile(e.target.files?.[0] || null);
-            setResult(null);
-          }}
-        />
-      </div>
-
-      <button
-        onClick={handleUpload}
-        className={`w-full mt-6 px-4 py-3 rounded-lg font-bold text-white transition-all ${
-          loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700 shadow-md"
-        }`}
-        disabled={!file || loading}
-      >
-        {loading ? (
-          <span className="flex items-center justify-center">
-            <svg
-              className="animate-spin h-5 w-5 mr-3 text-white"
-              viewBox="0 0 24 24"
+            <div
+              className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${
+                preview
+                  ? "border-emerald-200 bg-emerald-50/20"
+                  : "border-slate-200 hover:border-emerald-400 bg-slate-50"
+              }`}
             >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Analyzing...
-          </span>
-        ) : (
-          "Run Diagnosis"
-        )}
-      </button>
+              {preview ? (
+                <div className="relative w-full h-full">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-full max-h-[400px] object-cover rounded-2xl shadow-xl border border-white"
+                  />
+                  {/* Minimalist Clear Button */}
+                  <button
+                    onClick={() => setFile(null)}
+                    className="absolute top-3 right-3 p-2 bg-slate-900/40 hover:bg-red-500 backdrop-blur-md rounded-full text-white transition-all opacity-0 group-hover/preview:opacity-100 shadow-lg"
+                    title="Clear Image"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
+                    <Upload size={32} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-700">
+                      Drop your field photo here
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Supports JPG, PNG (Max 10MB)
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      setFile(e.target.files?.[0] || null);
+                      setResult(null);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
-      {/* Result Display */}
-      {result && (
-        <div className="mt-6 animate-fade-in">
-          {/* Logic to handle the raw array from SageMaker */}
-          {(() => {
-            // 1. Define labels based on your .lst file (Index 0 = Healthy, 1 = Unhealthy)
-            const classNames = ["Healthy", "Unhealthy"];
+            <button
+              onClick={handleUpload}
+              disabled={!file || loading}
+              className={`w-full mt-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                loading
+                  ? "bg-slate-100 text-slate-400"
+                  : "bg-slate-900 text-white hover:bg-emerald-600 shadow-lg"
+              }`}
+            >
+              {loading ? "Processing Visual Data..." : "Run AI Diagnosis"}
+              {!loading && <Activity size={18} />}
+            </button>
+          </div>
+        </div>
 
-            // 2. SageMaker returns an array like [0.998, 0.002]
-            // We ensure it's an array, then find the highest probability
-            const probabilities = Array.isArray(result) ? result : [];
-            const topIndex = probabilities.indexOf(Math.max(...probabilities));
+        {/* RIGHT: Analysis & History */}
+        <div className="lg:col-span-5 space-y-6">
+          {result ? (
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm animate-in slide-in-from-right-4 duration-500">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">
+                Diagnosis Report
+              </h3>
 
-            const confidence = probabilities[topIndex];
-            const label = classNames[topIndex] || "Detection Failed";
-            const isHealthy = label === "Healthy";
+              {(() => {
+                const classNames = ["Healthy", "Unhealthy"];
+                const probabilities = Array.isArray(result) ? result : [];
+                const topIndex = probabilities.indexOf(
+                  Math.max(...probabilities)
+                );
+                const confidence = probabilities[topIndex];
+                const label = classNames[topIndex];
+                const isHealthy = label === "Healthy";
 
-            return (
-              <>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  Diagnosis:
-                </h3>
-                <div
-                  className={`p-5 rounded-lg border-l-8 shadow-sm ${
-                    isHealthy
-                      ? "bg-green-50 border-green-500 text-green-900"
-                      : "bg-red-50 border-red-600 text-red-900"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
+                return (
+                  <div className="p-6 rounded-2xl flex items-center gap-5 border bg-white shadow-sm border-slate-100">
+                    <div
+                      className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border ${
+                        isHealthy
+                          ? "border-emerald-100 text-emerald-500"
+                          : "border-red-100 text-red-500"
+                      }`}
+                    >
+                      {isHealthy ? <CheckCircle /> : <AlertTriangle />}
+                    </div>
                     <div>
-                      <p className="text-2xl font-black uppercase tracking-tight">
+                      <p
+                        className={`text-3xl font-black tracking-tight ${
+                          isHealthy ? "text-emerald-900" : "text-red-900"
+                        }`}
+                      >
                         {label}
                       </p>
-                      <p className="text-sm font-medium opacity-70">
-                        Confidence Score: {(confidence * 100).toFixed(2)}%
+                      <p className="text-xs font-bold text-slate-500">
+                        Confidence: {(confidence * 100).toFixed(2)}%
                       </p>
                     </div>
-                    <div className="text-4xl">{isHealthy ? "🌿" : "🍂"}</div>
                   </div>
-                </div>
-              </>
-            );
-          })()}
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="bg-slate-50 p-8 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center min-h-[140px]">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-300 mb-3">
+                <Info size={20} />
+              </div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Waiting for input
+              </p>
+            </div>
+          )}
 
-          <details className="mt-6">
-            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 underline">
-              View raw probability data
-            </summary>
-            <pre className="mt-2 p-3 bg-gray-800 text-green-400 text-xs rounded-md overflow-x-auto border border-gray-700">
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </details>
+          {/* History Sidebar */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <History size={16} className="text-slate-400" />
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">
+                Session Scans
+              </h4>
+            </div>
+            <div className="space-y-3">
+              {history.length > 0 ? (
+                history.map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center p-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors"
+                  >
+                    <div>
+                      <p
+                        className={`text-xs font-black ${
+                          h.label === "Healthy"
+                            ? "text-emerald-600"
+                            : "text-red-500"
+                        }`}
+                      >
+                        {h.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{h.date}</p>
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
+                      {(h.confidence * 100).toFixed(2)}%
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[10px] text-slate-400 italic">
+                  No previous scans
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
