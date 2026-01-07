@@ -94,11 +94,10 @@ export default function PlantUpload() {
             </div>
 
             <div
-              className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${
-                preview
+              className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${preview
                   ? "border-emerald-200 bg-emerald-50/20"
                   : "border-slate-200 hover:border-emerald-400 bg-slate-50"
-              }`}
+                }`}
             >
               {preview ? (
                 <div className="relative w-full h-full">
@@ -145,14 +144,15 @@ export default function PlantUpload() {
             <button
               onClick={handleUpload}
               disabled={!file || loading}
-              className={`w-full mt-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                loading
-                  ? "bg-slate-100 text-slate-400"
-                  : "bg-slate-900 text-white hover:bg-emerald-600 shadow-lg"
-              }`}
+              className={`w-full mt-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!file
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed" // Style for no image
+                  : loading
+                    ? "bg-slate-100 text-slate-400 cursor-wait" // Style for loading
+                    : "bg-slate-900 text-white hover:bg-emerald-600 shadow-lg active:scale-[0.98]" // Style for ready
+                }`}
             >
-              {loading ? "Processing Visual Data..." : "Run AI Diagnosis"}
-              {!loading && <Activity size={18} />}
+              {loading ? "Processing Visual Data..." : !file ? "Upload Image to Start" : "Run AI Diagnosis"}
+              {!loading && file && <Activity size={18} />}
             </button>
           </div>
         </div>
@@ -178,19 +178,17 @@ export default function PlantUpload() {
                 return (
                   <div className="p-6 rounded-2xl flex items-center gap-5 border bg-white shadow-sm border-slate-100">
                     <div
-                      className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border ${
-                        isHealthy
+                      className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border ${isHealthy
                           ? "border-emerald-100 text-emerald-500"
                           : "border-red-100 text-red-500"
-                      }`}
+                        }`}
                     >
                       {isHealthy ? <CheckCircle /> : <AlertTriangle />}
                     </div>
                     <div>
                       <p
-                        className={`text-3xl font-black tracking-tight ${
-                          isHealthy ? "text-emerald-900" : "text-red-900"
-                        }`}
+                        className={`text-3xl font-black tracking-tight ${isHealthy ? "text-emerald-900" : "text-red-900"
+                          }`}
                       >
                         {label}
                       </p>
@@ -230,11 +228,10 @@ export default function PlantUpload() {
                   >
                     <div>
                       <p
-                        className={`text-xs font-black ${
-                          h.label === "Healthy"
+                        className={`text-xs font-black ${h.label === "Healthy"
                             ? "text-emerald-600"
                             : "text-red-500"
-                        }`}
+                          }`}
                       >
                         {h.label}
                       </p>
