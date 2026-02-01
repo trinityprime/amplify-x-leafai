@@ -37,7 +37,7 @@ export default function Layout() {
       roles: ["ADMIN", "FIELD_TECH", "DATA_ANALYST"],
     },
     { name: "Upload", path: "/uploadimg", roles: ["FIELD_TECH"] },
-    { name: "Users", path: "/userdashboard", roles: ["ADMIN"] },
+    { name: "User Management", path: "/userdashboard", roles: ["ADMIN"] },
   ];
 
   const visibleLinks = navLinks.filter(
@@ -64,11 +64,10 @@ export default function Layout() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
-                      isActive(link.path)
+                    className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${isActive(link.path)
                         ? "bg-emerald-50 text-emerald-700 shadow-sm"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {link.name}
                   </Link>
