@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Authenticator, View, Text, Heading } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
@@ -17,6 +17,7 @@ import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
 import LeafHealthPredictor from "./pages/LeafModel.tsx";
 import RoleGuard from "./components/RoleGuard.tsx";
+import TurnstileWidget from "./components/TurnstileWidget.tsx";
 
 Amplify.configure(outputs);
 
@@ -53,76 +54,107 @@ const components = {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Authenticator components={components} hideSignUp>
-        {(authData) => {
-          const { user } = authData;
-          return (
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<App />} />
-
-                {/* ADMIN ONLY */}
-                <Route
-                  path="userdashboard"
-                  element={
-                    <RoleGuard allowedRoles={["ADMIN"]}>
-                      <UserDashboard user={user} />
-                    </RoleGuard>
-                  }
-                />
-
-                {/* DATA ANALYST */}
-                <Route
-                  path="dashboard"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Dashboard />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="dashboard2"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Dashboardv2 />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="reports"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Reports />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="new"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <NewReport />
-                    </RoleGuard>
-                  }
-                />
-
-                {/* FIELD TECHNICIAN */}
-                <Route
-                  path="uploadimg"
-                  element={
-                    <RoleGuard allowedRoles={["FIELD_TECH"]}>
-                      <UploadImages />
-                    </RoleGuard>
-                  }
-                />
-
-                {/* PUBLIC */}
-                <Route path="leaf-model" element={<LeafHealthPredictor />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          );
-        }}
-      </Authenticator>
+      <InitialCaptchaGate />
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
+
+function InitialCaptchaGate() {
+  const [initialCaptchaToken, setInitialCaptchaToken] = useState<string>("");
+
+  if (!initialCaptchaToken) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center space-y-6">
+          <div className="flex justify-center items-center gap-2">
+            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
+              L
+            </div>
+            <h1 className="text-3xl font-black text-slate-900">LeafCorp AI</h1>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-700">
+            Verify you're human to continue
+          </h2>
+          <TurnstileWidget onVerify={setInitialCaptchaToken} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Authenticator components={components} hideSignUp>
+      {(authData) => {
+        const { user } = authData;
+        return <AppRoutes user={user} />;
+      }}
+    </Authenticator>
+  );
+}
+
+function AppRoutes({ user }: { user: any }) {
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<App />} />
+
+        {/* ADMIN ONLY */}
+        <Route
+          path="userdashboard"
+          element={
+            <RoleGuard allowedRoles={["ADMIN"]}>
+              <UserDashboard user={user} />
+            </RoleGuard>
+          }
+        />
+
+        {/* DATA ANALYST */}
+        <Route
+          path="dashboard"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Dashboard />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="dashboard2"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Dashboardv2 />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Reports />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="new"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <NewReport />
+            </RoleGuard>
+          }
+        />
+
+        {/* FIELD TECHNICIAN */}
+        <Route
+          path="uploadimg"
+          element={
+            <RoleGuard allowedRoles={["FIELD_TECH"]}>
+              <UploadImages />
+            </RoleGuard>
+          }
+        />
+
+        {/* PUBLIC */}
+        <Route path="leaf-model" element={<LeafHealthPredictor />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
+}
