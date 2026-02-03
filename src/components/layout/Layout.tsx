@@ -8,10 +8,10 @@ export default function Layout() {
         <Link to="/">Home</Link>
         <div className="grow"/>
         <Link to="/userdashboard">User Dashboard</Link>
-        <Link to="/dashboard">Dashboard</Link>
-        <Link to="/dashboard2">Dashboard v2</Link>
-        <Link to="/reports">Reports</Link>
+        {/* <Link to="/dashboard">Dashboard</Link> */}
         <Link to="/new">New Report</Link>
+        <Link to="/dashboard2">Dashboard v2</Link>
+        {/* <Link to="/reports">Reports</Link> */}
         <Link to="/uploadimg">Upload Image</Link>
         <Link to="/test">test</Link>
       </nav>
