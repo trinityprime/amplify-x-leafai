@@ -1,0 +1,48 @@
+{
+  "RequestItems": {
+    "farmReport": [
+      {
+        "PutRequest": {
+          "Item": {
+            "id": { "S": "rpt-0161" },
+            "dateTime": { "S": "2026-01-29T07:25:00.000Z" },
+            "tentId": { "S": "tent-28" },
+            "rackId": { "S": "rack-D1" },
+            "severity": { "N": "5" },
+            "problemCategory": { "S": "pest infestation" },
+            "status": { "S": "unresolved" },
+            "description": { "S": "Severe feeding persists; quarantine and deep clean zone." }
+          }
+        }
+      },
+      {
+        "PutRequest": {
+          "Item": {
+            "id": { "S": "rpt-0162" },
+            "dateTime": { "S": "2026-01-29T08:00:00.000Z" },
+            "tentId": { "S": "tent-6" },
+            "rackId": { "S": "rack-C2" },
+            "severity": { "N": "4" },
+            "problemCategory": { "S": "water damage" },
+            "status": { "S": "unresolved" },
+            "description": { "S": "Wet floor under manifold; tighten fittings and dry area." }
+          }
+        }
+      },
+      {
+        "PutRequest": {
+          "Item": {
+            "id": { "S": "rpt-0163" },
+            "dateTime": { "S": "2026-01-29T08:35:00.000Z" },
+            "tentId": { "S": "tent-7" },
+            "rackId": { "S": "rack-B1" },
+            "severity": { "N": "3" },
+            "problemCategory": { "S": "fungal disease" },
+            "status": { "S": "unresolved" },
+            "description": { "S": "Mildew patch near wall; increase airflow and reduce leaf wetness." }
+          }
+        }
+      }
+    ]
+  }
+}
