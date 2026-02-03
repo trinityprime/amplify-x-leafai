@@ -2,8 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSummary, listReports } from "../../hooks/farmReportAPI";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
