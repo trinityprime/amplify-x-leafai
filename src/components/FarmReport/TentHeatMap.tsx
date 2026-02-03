@@ -61,7 +61,6 @@ const farmArea = [
 export default function TentHeatMap({
   byTent,
   imageUrl = DEFAULT_IMAGE,
-  onSelectTent,
   selectedTentId,
   useBuckets = false,
   buckets,
