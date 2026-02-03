@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getSummary, listReports } from "../../hooks/farmReportAPI";
 
 
@@ -13,14 +13,11 @@ type Filters = {
 };
 
 export default function Reports() {
-  const [filters, setFilters] = useState<Filters>({});
-  const [summary, setSummary] = useState<any | null>(null);
+  const [filters, ] = useState<Filters>({});
+  const [, setSummary] = useState<any | null>(null);
   const [list, setList] = useState<any>({ items: [], count: 0, cursor: null });
   const [loadingList, setLoadingList] = useState(false);
 
-  function updateFilter<K extends keyof Filters>(k: K, v: any) {
-    setFilters((f) => ({ ...f, [k]: v || undefined }));
-  }
 
   async function loadSummary(f: Filters) {
     const res = await getSummary(f);
@@ -46,19 +43,8 @@ export default function Reports() {
     loadList(filters, null);
   }, [JSON.stringify(filters)]);
 
-  const byTent = useMemo(
-    () => (summary?.byTent || []).map((d: any) => ({ name: d.tentId, count: d.count })),
-    [summary]
-  );
-  const byCategory = useMemo(
-    () =>
-      (summary?.byCategory || []).map((d: any) => ({
-        name: d.problemCategory,
-        count: d.count,
-      })),
-    [summary]
-  );
-  const timeseries = summary?.timeseries || [];
+
+  
 
 
 
