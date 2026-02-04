@@ -1,5 +1,4 @@
 import { Turnstile, useTurnstile } from "react-turnstile";
-import { useState } from "react";
 
 interface TurnstileWidgetProps {
   onVerify?: (token: string) => void;
@@ -15,15 +14,12 @@ export default function TurnstileWidget({
   size = "normal",
 }: TurnstileWidgetProps) {
   const turnstile = useTurnstile();
-  const [isVerified, setIsVerified] = useState(false);
 
-  // Add to your TurnstileWidget.tsx
   const handleVerify = (token: string) => {
     console.log(
       "✅ Captcha verified with token:",
       token.substring(0, 20) + "...",
     );
-    setIsVerified(true);
     if (onVerify) {
       onVerify(token);
     }
@@ -31,7 +27,6 @@ export default function TurnstileWidget({
 
   const handleError = (error: Error) => {
     console.error("❌ Captcha error:", error);
-    setIsVerified(false);
     if (onError) {
       onError(error);
     }
@@ -39,7 +34,6 @@ export default function TurnstileWidget({
 
   const handleExpire = () => {
     console.log("⏰ Captcha token expired");
-    setIsVerified(false);
     if (turnstile) {
       turnstile.reset();
     }

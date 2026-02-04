@@ -151,7 +151,7 @@ export default function CorrelationAnalysis() {
 
     setSaving(true);
     try {
-      const updated = await updateCorrelation(editingAnalysis.correlationId, {
+      await updateCorrelation(editingAnalysis.correlationId, {
         name: editName || undefined,
         notes: editNotes || undefined,
       });
@@ -527,15 +527,14 @@ export default function CorrelationAnalysis() {
                           <td className="py-3 px-4 text-right">{c.totalDetections}</td>
                           <td className="py-3 px-4 text-right">
                             <span
-                              className={`inline-flex items-center px-2 py-1 rounded-lg font-bold text-xs ${
-                                c.correlationRate >= 70
-                                  ? 'bg-red-100 text-red-700'
-                                  : c.correlationRate >= 50
-                                    ? 'bg-orange-100 text-orange-700'
-                                    : c.correlationRate >= 30
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-green-100 text-green-700'
-                              }`}
+                              className={`inline-flex items-center px-2 py-1 rounded-lg font-bold text-xs ${c.correlationRate >= 70
+                                ? 'bg-red-100 text-red-700'
+                                : c.correlationRate >= 50
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : c.correlationRate >= 30
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}
                             >
                               {c.correlationRate}%
                             </span>
@@ -564,13 +563,12 @@ export default function CorrelationAnalysis() {
                 {analysis.insights.map((insight, i) => (
                   <div
                     key={i}
-                    className={`p-4 rounded-xl ${
-                      insight.type === 'warning'
-                        ? 'bg-red-50 border border-red-200'
-                        : insight.type === 'insight'
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'bg-slate-50 border border-slate-200'
-                    }`}
+                    className={`p-4 rounded-xl ${insight.type === 'warning'
+                      ? 'bg-red-50 border border-red-200'
+                      : insight.type === 'insight'
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-slate-50 border border-slate-200'
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {insight.type === 'warning' ? (
@@ -580,13 +578,12 @@ export default function CorrelationAnalysis() {
                       ) : (
                         <Info size={16} className="text-slate-600 mt-0.5" />
                       )}
-                      <p className={`text-sm ${
-                        insight.type === 'warning'
-                          ? 'text-red-800'
-                          : insight.type === 'insight'
-                            ? 'text-blue-800'
-                            : 'text-slate-700'
-                      }`}>
+                      <p className={`text-sm ${insight.type === 'warning'
+                        ? 'text-red-800'
+                        : insight.type === 'insight'
+                          ? 'text-blue-800'
+                          : 'text-slate-700'
+                        }`}>
                         {insight.message}
                       </p>
                     </div>
@@ -698,11 +695,10 @@ export default function CorrelationAnalysis() {
                 {filteredAnalyses.map((a) => (
                   <div
                     key={a.correlationId}
-                    className={`relative w-full text-left p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
-                      analysis?.correlationId === a.correlationId
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-                    }`}
+                    className={`relative w-full text-left p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${analysis?.correlationId === a.correlationId
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                      }`}
                     onClick={() => setAnalysis(a)}
                   >
                     <div className="flex items-start justify-between gap-2">
