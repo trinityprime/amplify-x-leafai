@@ -142,7 +142,7 @@ export default function CreateReportForm({
         </label>
         <input
           type="text"
-          placeholder="e.g., rack-2, shelf-A3"
+          placeholder="e.g., rack-A2"
           value={form.rackId}
           onChange={(e) => update("rackId", e.target.value)}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm 

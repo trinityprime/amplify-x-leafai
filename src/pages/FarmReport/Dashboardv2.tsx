@@ -1,6 +1,6 @@
 // src/pages/FarmReport/Dashboardv2.tsx
 import { useEffect, useMemo, useState } from "react";
-import { getSummary, listReports } from "../../hooks/farmReportAPI";
+import { getSummary, listReports, updateReport } from "../../hooks/farmReportAPI";
 import {
   XAxis,
   YAxis,
@@ -48,6 +48,7 @@ export default function Dashboardv2() {
   const [loading, setLoading] = useState(true);
   const [selectedTentId, setSelectedTentId] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+  const [updating, setUpdating] = useState<string | null>(null); // tracks which report is being updated
 
   function updateFilter<K extends keyof Filters>(k: K, v: any) {
     setFilters((f) => ({ ...f, [k]: v || undefined }));
@@ -78,6 +79,32 @@ export default function Dashboardv2() {
     setFilters({});
     loadData({});
   };
+
+  async function handleMarkResolved(id: string) {
+    setUpdating(id);
+    try {
+      await updateReport({ id, updates: { status: "resolved" } });
+      await loadData(filters); // refresh data
+    } catch (err) {
+      console.error("Failed to update:", err);
+      alert("Failed to mark as resolved");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function handleUpdateSeverity(id: string, newSeverity: number) {
+    setUpdating(id);
+    try {
+      await updateReport({ id, updates: { severity: newSeverity } });
+      await loadData(filters);
+    } catch (err) {
+      console.error("Failed to update:", err);
+      alert("Failed to update severity");
+    } finally {
+      setUpdating(null);
+    }
+  }
 
   // Computed stats
   const stats = useMemo(() => {
@@ -778,6 +805,9 @@ export default function Dashboardv2() {
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
                     Description
                   </th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -792,9 +822,7 @@ export default function Dashboardv2() {
                     <td className="py-3 px-4 text-sm font-medium text-gray-800">
                       {r.tentId}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {r.rackId}
-                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{r.rackId}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {r.problemCategory}
                     </td>
@@ -803,6 +831,15 @@ export default function Dashboardv2() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600 max-w-xs truncate">
                       {r.description || "-"}
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => handleMarkResolved(r.id)}
+                        disabled={updating === r.id}
+                        className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        {updating === r.id ? "..." : "✓ Resolve"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -868,26 +905,24 @@ export default function Dashboardv2() {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        parseInt(row.resolutionRate) >= 80
-                          ? "bg-green-100 text-green-700"
-                          : parseInt(row.resolutionRate) >= 50
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${parseInt(row.resolutionRate) >= 80
+                        ? "bg-green-100 text-green-700"
+                        : parseInt(row.resolutionRate) >= 50
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
+                        }`}
                     >
                       {row.resolutionRate}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        parseFloat(row.riskScore) >= 5
-                          ? "bg-red-100 text-red-700"
-                          : parseFloat(row.riskScore) >= 3
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-green-100 text-green-700"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-bold ${parseFloat(row.riskScore) >= 5
+                        ? "bg-red-100 text-red-700"
+                        : parseFloat(row.riskScore) >= 3
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-green-100 text-green-700"
+                        }`}
                     >
                       {row.riskScore}
                     </span>
@@ -951,13 +986,12 @@ export default function Dashboardv2() {
                     </td>
                     <td className="py-3 px-3 text-right">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          parseInt(row.resolutionRate) >= 80
-                            ? "bg-green-100 text-green-700"
-                            : parseInt(row.resolutionRate) >= 50
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                        }`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${parseInt(row.resolutionRate) >= 80
+                          ? "bg-green-100 text-green-700"
+                          : parseInt(row.resolutionRate) >= 50
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-red-100 text-red-700"
+                          }`}
                       >
                         {row.resolutionRate}
                       </span>
@@ -1069,17 +1103,16 @@ export default function Dashboardv2() {
                       <td key={i} className="py-3 px-3 text-center">
                         {count > 0 ? (
                           <span
-                            className={`inline-block min-w-6 px-2 py-1 rounded text-xs font-medium ${
-                              i === 0
-                                ? "bg-green-100 text-green-700"
-                                : i === 1
-                                  ? "bg-lime-100 text-lime-700"
-                                  : i === 2
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : i === 3
-                                      ? "bg-orange-100 text-orange-700"
-                                      : "bg-red-100 text-red-700"
-                            }`}
+                            className={`inline-block min-w-6 px-2 py-1 rounded text-xs font-medium ${i === 0
+                              ? "bg-green-100 text-green-700"
+                              : i === 1
+                                ? "bg-lime-100 text-lime-700"
+                                : i === 2
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : i === 3
+                                    ? "bg-orange-100 text-orange-700"
+                                    : "bg-red-100 text-red-700"
+                              }`}
                           >
                             {count}
                           </span>
@@ -1172,10 +1205,36 @@ export default function Dashboardv2() {
                     {r.problemCategory}
                   </td>
                   <td className="py-3 px-4">
-                    <SeverityBadge severity={parseSeverity(r.severity)} />
+                    <select
+                      value={parseSeverity(r.severity)}
+                      onChange={(e) => handleUpdateSeverity(r.id, Number(e.target.value))}
+                      disabled={updating === r.id}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-50"
+                    >
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <option key={s} value={s}>
+                          {s}/5
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="py-3 px-4">
-                    <StatusBadge status={r.status} />
+                    <button
+                      onClick={() =>
+                        handleMarkResolved(r.id).then(() => {
+                          if (r.status === "resolved") {
+                            // If already resolved, you might want to unresolve
+                            updateReport({ id: r.id, updates: { status: "unresolved" } }).then(
+                              () => loadData(filters)
+                            );
+                          }
+                        })
+                      }
+                      disabled={updating === r.id}
+                      className="disabled:opacity-50"
+                    >
+                      <StatusBadge status={r.status} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -1210,9 +1269,8 @@ function StatCard({
 }) {
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border p-4 ${
-        alert ? "border-red-300 bg-red-50" : "border-gray-200"
-      }`}
+      className={`bg-white rounded-xl shadow-sm border p-4 ${alert ? "border-red-300 bg-red-50" : "border-gray-200"
+        }`}
     >
       <div className="flex items-center justify-between">
         <span className="text-2xl">{icon}</span>
@@ -1250,11 +1308,10 @@ function StatusBadge({ status }: { status: string }) {
   const isResolved = status === "resolved";
   return (
     <span
-      className={`px-2 py-1 rounded-full text-xs font-medium ${
-        isResolved
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-red-100 text-red-700"
-      }`}
+      className={`px-2 py-1 rounded-full text-xs font-medium ${isResolved
+        ? "bg-emerald-100 text-emerald-700"
+        : "bg-red-100 text-red-700"
+        }`}
     >
       {status}
     </span>
@@ -1276,9 +1333,8 @@ function TrendBadge({ value, metric }: { value: string; metric: string }) {
 
   return (
     <span
-      className={`px-2 py-1 rounded-full text-xs font-medium ${
-        isGood ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-      }`}
+      className={`px-2 py-1 rounded-full text-xs font-medium ${isGood ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}
     >
       {value}
     </span>

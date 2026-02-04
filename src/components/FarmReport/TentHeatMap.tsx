@@ -107,18 +107,24 @@ export default function TentHeatMap({
 
   // Always-on fill color (used for preFillColor)
   function colorForCount(count: number) {
-    if (useBuckets && buckets?.length) {
-      const b = buckets.find((x) => count <= x.max) || buckets[buckets.length - 1];
-      return toRgba(b.color, 0.6);
-    }
-    if (maxCount <= 0) return "rgba(200,200,200,0.5)";
-    const t = Math.max(0, Math.min(1, count / maxCount));
-    // green -> red gradient
-    const r = lerp(46, 220, t);
-    const g = lerp(204, 50, t);
-    const b = lerp(113, 50, t);
-    return `rgba(${r}, ${g}, ${b}, 0.6)`;
+  // No issues = transparent
+  if (count === 0) return "rgba(0, 0, 0, 0)";
+
+  if (useBuckets && buckets?.length) {
+    const b = buckets.find((x) => count <= x.max) || buckets[buckets.length - 1];
+    return toRgba(b.color, 0.6);
   }
+
+  if (maxCount <= 0) return "rgba(0, 0, 0, 0)";
+
+  // For count >= 1, scale from yellow to red (skip green since 0 is now clear)
+  const t = Math.max(0, Math.min(1, (count - 1) / Math.max(maxCount - 1, 1)));
+  // yellow -> orange -> red gradient
+  const r = lerp(250, 220, t);
+  const g = lerp(204, 50, t);
+  const b = lerp(21, 50, t);
+  return `rgba(${r}, ${g}, ${b}, 0.6)`;
+}
 
   // Build areas with preFillColor so fills show while disabled
   const displayAreas = useMemo(() => {
@@ -160,15 +166,26 @@ function Legend({ maxCount }: { maxCount: number }) {
   const steps = 6;
   const swatches = new Array(steps).fill(0).map((_, i) => {
     const t = i / (steps - 1);
-    const r = Math.round(46 + (220 - 46) * t);
+    // yellow -> orange -> red
+    const r = Math.round(250 + (220 - 250) * t);
     const g = Math.round(204 + (50 - 204) * t);
-    const b = Math.round(113 + (50 - 113) * t);
+    const b = Math.round(21 + (50 - 21) * t);
     return `rgb(${r}, ${g}, ${b})`;
   });
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-      <span style={{ fontSize: 12, color: "#555" }}>Low</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div
+          style={{
+            width: 20,
+            height: 10,
+            background: "repeating-linear-gradient(45deg, #ccc, #ccc 2px, #fff 2px, #fff 4px)",
+            border: "1px solid #ddd",
+          }}
+        />
+        <span style={{ fontSize: 12, color: "#555" }}>0</span>
+      </div>
       <div style={{ display: "flex", gap: 2 }}>
         {swatches.map((c, i) => (
           <div key={i} style={{ width: 20, height: 10, background: c }} />
