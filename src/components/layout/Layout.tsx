@@ -27,10 +27,10 @@ export default function Layout() {
   const isAdmin = groups.includes("ADMIN");
 
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", roles: ["DATA_ANALYST"] },
-    { name: "Dashboardv2", path: "/dashboard2", roles: ["DATA_ANALYST"] },
-    { name: "Reports", path: "/reports", roles: ["DATA_ANALYST"] },
+    // { name: "Dashboard", path: "/dashboard", roles: ["DATA_ANALYST"] },
     { name: "New Report", path: "/new", roles: ["DATA_ANALYST"] },
+    { name: "Dashboard", path: "/dashboard2", roles: ["DATA_ANALYST"] },
+    // { name: "Reports", path: "/reports", roles: ["DATA_ANALYST"] },
     { name: "Export", path: "/export", roles: ["DATA_ANALYST", "FIELD_TECH"] },
     { name: "Weather", path: "/weather", roles: ["DATA_ANALYST", "FIELD_TECH"] },
     {

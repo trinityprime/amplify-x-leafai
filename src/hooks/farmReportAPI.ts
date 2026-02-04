@@ -49,3 +49,27 @@ export async function createReport(payload: any) {
   if (!res.ok) throw new Error(await res.text());
   return res.json(); // { message, item }
 }
+
+export async function updateReport(payload: {
+  id: string;
+  updates: Record<string, string | number | null>;
+}) {
+  const res = await fetch(`${API}/farmreport`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object" && typeof parsed.body === "string") {
+      return JSON.parse(parsed.body);
+    }
+    return parsed;
+  } catch {
+    return text as any;
+  }
+}
