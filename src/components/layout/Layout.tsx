@@ -31,6 +31,8 @@ export default function Layout() {
     { name: "Dashboardv2", path: "/dashboard2", roles: ["DATA_ANALYST"] },
     { name: "Reports", path: "/reports", roles: ["DATA_ANALYST"] },
     { name: "New Report", path: "/new", roles: ["DATA_ANALYST"] },
+    { name: "Export", path: "/export", roles: ["DATA_ANALYST", "FIELD_TECH"] },
+    { name: "Weather", path: "/weather", roles: ["DATA_ANALYST", "FIELD_TECH"] },
     {
       name: "Leaf AI",
       path: "/leaf-model",

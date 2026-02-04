@@ -17,6 +17,10 @@ import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
 import LeafHealthPredictor from "./pages/LeafModel.tsx";
 import RoleGuard from "./components/RoleGuard.tsx";
+import ExportPage from "./pages/ExportPage.tsx";
+import ScheduledReportsPage from "./pages/ScheduledReportsPage.tsx";
+import WeatherDashboard from "./pages/WeatherDashboard.tsx";
+import CorrelationAnalysis from "./pages/CorrelationAnalysis.tsx";
 
 Amplify.configure(outputs);
 
@@ -101,6 +105,38 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   element={
                     <RoleGuard allowedRoles={["DATA_ANALYST"]}>
                       <NewReport />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="export"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <ExportPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="scheduled-reports"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <ScheduledReportsPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="weather"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <WeatherDashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="weather/correlations"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <CorrelationAnalysis />
                     </RoleGuard>
                   }
                 />

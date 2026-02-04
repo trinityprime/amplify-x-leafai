@@ -1,0 +1,29 @@
+{
+  "name": "leafai-lambdas",
+  "version": "1.0.0",
+  "description": "Lambda functions for LeafAI Export, Scheduled Reports, and Weather Integration features",
+  "main": "index.js",
+  "scripts": {
+    "zip-export": "zip -r exportDetections.zip exportDetections.js node_modules",
+    "zip-schedule": "zip -r scheduleManager.zip scheduleManager.js node_modules",
+    "zip-weather": "zip -r weatherIntegration.zip weatherIntegration.js node_modules"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/client-eventbridge": "^3.400.0",
+    "@aws-sdk/client-s3": "^3.400.0",
+    "@aws-sdk/client-secrets-manager": "^3.400.0",
+    "@aws-sdk/client-sns": "^3.400.0",
+    "@aws-sdk/lib-dynamodb": "^3.400.0",
+    "@aws-sdk/s3-request-presigner": "^3.400.0",
+    "uuid": "^9.0.0"
+  },
+  "keywords": [
+    "leafai",
+    "lambda",
+    "aws",
+    "export"
+  ],
+  "author": "LeafAI Team",
+  "license": "MIT"
+}
