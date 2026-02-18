@@ -13,12 +13,11 @@ type Filters = {
 };
 
 export default function Reports() {
-  const [filters] = useState<Filters>({});
-  const [setSummary] = useState<any | null>(null);
+  const [filters, ] = useState<Filters>({});
+  const [, setSummary] = useState<any | null>(null);
   const [list, setList] = useState<any>({ items: [], count: 0, cursor: null });
   const [loadingList, setLoadingList] = useState(false);
 
-  
 
   async function loadSummary(f: Filters) {
     const res = await getSummary(f);
@@ -44,6 +43,8 @@ export default function Reports() {
     loadList(filters, null);
   }, [JSON.stringify(filters)]);
 
+
+  
 
 
 

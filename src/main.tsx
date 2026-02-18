@@ -17,6 +17,10 @@ import UserDashboard from "./pages/UserDashboard.tsx";
 import UploadImages from "./pages/UploadImages.tsx";
 import LeafHealthPredictor from "./pages/LeafModel.tsx";
 import RoleGuard from "./components/RoleGuard.tsx";
+import ExportPage from "./pages/ExportPage.tsx";
+import ScheduledReportsPage from "./pages/ScheduledReportsPage.tsx";
+import WeatherDashboard from "./pages/WeatherDashboard.tsx";
+import CorrelationAnalysis from "./pages/CorrelationAnalysis.tsx";
 import TurnstileWidget from "./components/TurnstileWidget.tsx";
 
 Amplify.configure(outputs);
@@ -107,6 +111,71 @@ function AppRoutes({ user }: { user: any }) {
           }
         />
 
+                {/* DATA ANALYST */}
+                <Route
+                  path="dashboard"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Dashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="dashboard2"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Dashboardv2 />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="reports"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <Reports />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="new"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+                      <NewReport />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="export"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <ExportPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="scheduled-reports"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <ScheduledReportsPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="weather"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <WeatherDashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="weather/correlations"
+                  element={
+                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+                      <CorrelationAnalysis />
+                    </RoleGuard>
+                  }
+                />
         {/* DATA ANALYST */}
         <Route
           path="dashboard"
