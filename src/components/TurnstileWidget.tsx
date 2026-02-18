@@ -17,7 +17,6 @@ export default function TurnstileWidget({
   const turnstile = useTurnstile();
   const [isVerified, setIsVerified] = useState(false);
 
-  // Add to your TurnstileWidget.tsx
   const handleVerify = (token: string) => {
     console.log(
       "✅ Captcha verified with token:",

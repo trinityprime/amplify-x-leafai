@@ -15,7 +15,6 @@ export default function PlantUpload() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // 1. Initialize history from sessionStorage
   const [history, setHistory] = useState<any[]>(() => {
     const saved = sessionStorage.getItem("plant_history");
     return saved ? JSON.parse(saved) : [];
@@ -32,7 +31,7 @@ export default function PlantUpload() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
 
-  // 2. Save to sessionStorage whenever history changes
+  // Save to sessionStorage whenever history changes
   useEffect(() => {
     sessionStorage.setItem("plant_history", JSON.stringify(history));
   }, [history]);
@@ -52,11 +51,24 @@ export default function PlantUpload() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: base64 }),
-          }
+          },
         );
+
         const data = await res.json();
+
+        // Check if the Rekognition filter rejected the image
+        if (!res.ok) {
+          setResult({
+            isRejected: true,
+            message: data.message || "Invalid image content detected.",
+          });
+          setLoading(false);
+          return;
+        }
+
         setResult(data);
 
+        // Standard Diagnosis Logic
         const label = data[0] > data[1] ? "Healthy" : "Unhealthy";
         setHistory((prev) => [
           {
@@ -94,10 +106,11 @@ export default function PlantUpload() {
             </div>
 
             <div
-              className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${preview
+              className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${
+                preview
                   ? "border-emerald-200 bg-emerald-50/20"
                   : "border-slate-200 hover:border-emerald-400 bg-slate-50"
-                }`}
+              }`}
             >
               {preview ? (
                 <div className="relative w-full h-full">
@@ -106,9 +119,11 @@ export default function PlantUpload() {
                     alt="Preview"
                     className="w-full max-h-[400px] object-cover rounded-2xl shadow-xl border border-white"
                   />
-                  {/* Minimalist Clear Button */}
                   <button
-                    onClick={() => setFile(null)}
+                    onClick={() => {
+                      setFile(null);
+                      setResult(null);
+                    }}
                     className="absolute top-3 right-3 p-2 bg-slate-900/40 hover:bg-red-500 backdrop-blur-md rounded-full text-white transition-all opacity-0 group-hover/preview:opacity-100 shadow-lg"
                     title="Clear Image"
                   >
@@ -144,14 +159,19 @@ export default function PlantUpload() {
             <button
               onClick={handleUpload}
               disabled={!file || loading}
-              className={`w-full mt-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!file
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed" // Style for no image
+              className={`w-full mt-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                !file
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : loading
-                    ? "bg-slate-100 text-slate-400 cursor-wait" // Style for loading
-                    : "bg-slate-900 text-white hover:bg-emerald-600 shadow-lg active:scale-[0.98]" // Style for ready
-                }`}
+                  ? "bg-slate-100 text-slate-400 cursor-wait"
+                  : "bg-slate-900 text-white hover:bg-emerald-600 shadow-lg active:scale-[0.98]"
+              }`}
             >
-              {loading ? "Processing Visual Data..." : !file ? "Upload Image to Start" : "Run AI Diagnosis"}
+              {loading
+                ? "Processing Visual Data..."
+                : !file
+                ? "Upload Image to Start"
+                : "Run AI Diagnosis"}
               {!loading && file && <Activity size={18} />}
             </button>
           </div>
@@ -165,40 +185,60 @@ export default function PlantUpload() {
                 Diagnosis Report
               </h3>
 
-              {(() => {
-                const classNames = ["Healthy", "Unhealthy"];
-                const probabilities = Array.isArray(result) ? result : [];
-                const topIndex = probabilities.indexOf(
-                  Math.max(...probabilities)
-                );
-                const confidence = probabilities[topIndex];
-                const label = classNames[topIndex];
-                const isHealthy = label === "Healthy";
-
-                return (
-                  <div className="p-6 rounded-2xl flex items-center gap-5 border bg-white shadow-sm border-slate-100">
-                    <div
-                      className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border ${isHealthy
-                          ? "border-emerald-100 text-emerald-500"
-                          : "border-red-100 text-red-500"
-                        }`}
-                    >
-                      {isHealthy ? <CheckCircle /> : <AlertTriangle />}
-                    </div>
-                    <div>
-                      <p
-                        className={`text-3xl font-black tracking-tight ${isHealthy ? "text-emerald-900" : "text-red-900"
-                          }`}
-                      >
-                        {label}
-                      </p>
-                      <p className="text-xs font-bold text-slate-500">
-                        Confidence: {(confidence * 100).toFixed(2)}%
-                      </p>
-                    </div>
+              {/* NEW: Handle Rekognition Rejection UI */}
+              {result.isRejected ? (
+                <div className="p-6 rounded-2xl flex items-center gap-5 border border-amber-100 bg-amber-50/50">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border border-amber-200 text-amber-500">
+                    <AlertTriangle />
                   </div>
-                );
-              })()}
+                  <div>
+                    <p className="text-lg font-black tracking-tight text-amber-900">
+                      Unsuitable Image
+                    </p>
+                    <p className="text-xs font-medium text-amber-700 leading-tight">
+                      {result.message}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Standard Result Rendering */
+                (() => {
+                  const classNames = ["Healthy", "Unhealthy"];
+                  const probabilities = Array.isArray(result) ? result : [];
+                  const topIndex = probabilities.indexOf(
+                    Math.max(...probabilities),
+                  );
+                  const confidence = probabilities[topIndex];
+                  const label = classNames[topIndex];
+                  const isHealthy = label === "Healthy";
+
+                  return (
+                    <div className="p-6 rounded-2xl flex items-center gap-5 border bg-white shadow-sm border-slate-100">
+                      <div
+                        className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm bg-white border ${
+                          isHealthy
+                            ? "border-emerald-100 text-emerald-500"
+                            : "border-red-100 text-red-500"
+                        }`}
+                      >
+                        {isHealthy ? <CheckCircle /> : <AlertTriangle />}
+                      </div>
+                      <div>
+                        <p
+                          className={`text-3xl font-black tracking-tight ${
+                            isHealthy ? "text-emerald-900" : "text-red-900"
+                          }`}
+                        >
+                          {label}
+                        </p>
+                        <p className="text-xs font-bold text-slate-500">
+                          Confidence: {(confidence * 100).toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
             </div>
           ) : (
             <div className="bg-slate-50 p-8 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center min-h-[140px]">
@@ -228,10 +268,11 @@ export default function PlantUpload() {
                   >
                     <div>
                       <p
-                        className={`text-xs font-black ${h.label === "Healthy"
+                        className={`text-xs font-black ${
+                          h.label === "Healthy"
                             ? "text-emerald-600"
                             : "text-red-500"
-                          }`}
+                        }`}
                       >
                         {h.label}
                       </p>
