@@ -33,7 +33,7 @@ export default function App() {
     {
       name: "Farm Reports",
       desc: "View detailed agricultural analytics",
-      path: "/reports",
+      path: "/dashboard2",
       icon: <BarChart3 className="w-6 h-6" />,
       roles: ["DATA_ANALYST"],
       color: "bg-emerald-500",
