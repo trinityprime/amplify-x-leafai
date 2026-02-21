@@ -23,6 +23,15 @@ import {
   LeafDetection,
 } from "../hooks/leafDetectionApi";
 
+// Convert FileReader to a Promise so async/await works correctly
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
 function UploadImages() {
   const { user } = useAuthenticator();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -105,31 +114,36 @@ function UploadImages() {
     }
     setLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const detection = await createDetection({
-          farmerId,
-          content: `${selectedLabel} - ${selectedPestType}`,
-          location,
-          imageData: base64,
-          imageType: selectedFile!.type,
-          userEmail: user?.signInDetails?.loginId,
+      // Fix: convert FileReader to Promise so setLoading(false) waits correctly
+      const base64 = await fileToBase64(selectedFile);
+      const detection = await createDetection({
+        farmerId,
+        content: `${selectedLabel} - ${selectedPestType}`,
+        location,
+        imageData: base64,
+        imageType: selectedFile.type,
+        userEmail: user?.signInDetails?.loginId,
+      });
+
+      let finalDetection = detection;
+      if (selectedLabel !== "unlabeled") {
+        finalDetection = await updateDetection(detection.id, {
+          label: selectedLabel,
+          pestType: selectedPestType,
         });
-        if (selectedLabel !== "unlabeled") {
-          const updated = await updateDetection(detection.id, {
-            label: selectedLabel,
-            pestType: selectedPestType,
-          });
-          setCurrentDetection({ ...updated, photoUrl: previewUrl });
-        } else {
-          setCurrentDetection({ ...detection, photoUrl: previewUrl });
-        }
-        await loadAllDetections();
-        alert("✅ Uploaded!");
-        clearForm();
-      };
-      reader.readAsDataURL(selectedFile!);
+      }
+
+      const detectionWithPreview = { ...finalDetection, photoUrl: previewUrl };
+      setCurrentDetection(detectionWithPreview);
+
+      // Fix: instantly add to history without waiting for API refetch
+      setAllDetections((prev) => [detectionWithPreview, ...prev]);
+
+      clearForm();
+      alert("✅ Uploaded!");
+
+      // Sync in background to ensure history is accurate
+      loadAllDetections();
     } catch (error) {
       alert("❌ Upload failed");
     } finally {
@@ -170,29 +184,19 @@ function UploadImages() {
     setLoading(true);
     try {
       const updates: any = { farmerId: editFarmerId, location: editLocation };
+      // Fix: use Promise-based fileToBase64 so no more nested callback timing issues
       if (editFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          updates.imageData = (reader.result as string).split(",")[1];
-          updates.imageType = editFile.type;
-          const updated = await updateDetection(currentDetection.id, updates);
-          setCurrentDetection(updated);
-          await loadAllDetections();
-          setEditMode(false);
-          alert("✅ Updated!");
-          setLoading(false);
-        };
-        reader.readAsDataURL(editFile);
-      } else {
-        const updated = await updateDetection(currentDetection.id, updates);
-        setCurrentDetection(updated);
-        await loadAllDetections();
-        setEditMode(false);
-        alert("✅ Updated!");
-        setLoading(false);
+        updates.imageData = await fileToBase64(editFile);
+        updates.imageType = editFile.type;
       }
+      const updated = await updateDetection(currentDetection.id, updates);
+      setCurrentDetection(updated);
+      await loadAllDetections();
+      setEditMode(false);
+      alert("✅ Updated!");
     } catch (error) {
       alert("❌ Update failed!");
+    } finally {
       setLoading(false);
     }
   };
@@ -270,6 +274,22 @@ function UploadImages() {
             </p>
             <p className="text-2xl font-black text-slate-700 leading-none">
               {allDetections.length}
+            </p>
+          </div>
+          <div className="bg-emerald-50 px-6 py-2.5 rounded-2xl border border-emerald-100 text-center min-w-[140px]">
+            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.15em] mb-0.5">
+              Healthy
+            </p>
+            <p className="text-2xl font-black text-emerald-700 leading-none">
+              {allDetections.filter((d) => d.label === "good").length}
+            </p>
+          </div>
+          <div className="bg-red-50 px-6 py-2.5 rounded-2xl border border-red-100 text-center min-w-[140px]">
+            <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.15em] mb-0.5">
+              Diseased
+            </p>
+            <p className="text-2xl font-black text-red-600 leading-none">
+              {allDetections.filter((d) => d.label === "bad").length}
             </p>
           </div>
         </div>
@@ -702,7 +722,7 @@ function UploadImages() {
                       disabled={loading}
                       className="w-full flex items-center justify-center gap-2 py-3 text-red-400 hover:text-red-600 font-bold text-xs transition-colors"
                     >
-                      <Trash2 size={14} /> Remove Record Permanentely
+                      <Trash2 size={14} /> Remove Record Permanently
                     </button>
                   </div>
                 </>
