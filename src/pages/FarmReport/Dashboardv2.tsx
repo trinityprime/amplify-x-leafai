@@ -16,6 +16,7 @@ import {
   AreaChart,
 } from "recharts";
 import TentHeatMap from "../../components/FarmReport/TentHeatMap";
+import AISummaryPanel from "../../components/FarmReport/AISummaryReport";
 
 type Filters = {
   farmId?: string;
@@ -455,6 +456,7 @@ export default function Dashboardv2() {
         />
       </div>
 
+      <AISummaryPanel />
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex items-center justify-between mb-4">

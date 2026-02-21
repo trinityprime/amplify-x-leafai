@@ -107,24 +107,24 @@ export default function TentHeatMap({
 
   // Always-on fill color (used for preFillColor)
   function colorForCount(count: number) {
-  // No issues = transparent
-  if (count === 0) return "rgba(0, 0, 0, 0)";
+    // No issues = transparent
+    if (count === 0) return "rgba(0, 0, 0, 0)";
 
-  if (useBuckets && buckets?.length) {
-    const b = buckets.find((x) => count <= x.max) || buckets[buckets.length - 1];
-    return toRgba(b.color, 0.6);
+    if (useBuckets && buckets?.length) {
+      const b = buckets.find((x) => count <= x.max) || buckets[buckets.length - 1];
+      return toRgba(b.color, 0.6);
+    }
+
+    if (maxCount <= 0) return "rgba(0, 0, 0, 0)";
+
+    // For count >= 1, scale from yellow to red (skip green since 0 is now clear)
+    const t = Math.max(0, Math.min(1, (count - 1) / Math.max(maxCount - 1, 1)));
+    // yellow -> orange -> red gradient
+    const r = lerp(250, 220, t);
+    const g = lerp(204, 50, t);
+    const b = lerp(21, 50, t);
+    return `rgba(${r}, ${g}, ${b}, 0.6)`;
   }
-
-  if (maxCount <= 0) return "rgba(0, 0, 0, 0)";
-
-  // For count >= 1, scale from yellow to red (skip green since 0 is now clear)
-  const t = Math.max(0, Math.min(1, (count - 1) / Math.max(maxCount - 1, 1)));
-  // yellow -> orange -> red gradient
-  const r = lerp(250, 220, t);
-  const g = lerp(204, 50, t);
-  const b = lerp(21, 50, t);
-  return `rgba(${r}, ${g}, ${b}, 0.6)`;
-}
 
   // Build areas with preFillColor so fills show while disabled
   const displayAreas = useMemo(() => {
@@ -154,8 +154,8 @@ export default function TentHeatMap({
         disabled={true}          // disable hover so fills remain static
         isMulti={false}
         strokeColor="rgba(0,0,0,0)" // no global stroke; per-area strokeColor used
-        // onClick will not fire while disabled; remove or keep if you’ll toggle it later
-        // onClick={(area) => area?.id && onSelectTent?.(String(area.id))}
+      // onClick will not fire while disabled; remove or keep if you’ll toggle it later
+      // onClick={(area) => area?.id && onSelectTent?.(String(area.id))}
       />
       <Legend maxCount={maxCount} />
     </div>
@@ -174,24 +174,28 @@ function Legend({ maxCount }: { maxCount: number }) {
   });
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <div
-          style={{
-            width: 20,
-            height: 10,
-            background: "repeating-linear-gradient(45deg, #ccc, #ccc 2px, #fff 2px, #fff 4px)",
-            border: "1px solid #ddd",
-          }}
-        />
-        <span style={{ fontSize: 12, color: "#555" }}>0</span>
+    <div>
+      <div style={{ fontSize: 16, color: "#555"}}>Unresolved Issues count</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+
+          <div
+            style={{
+              width: 20,
+              height: 10,
+              background: "repeating-linear-gradient(45deg, #ccc, #ccc 2px, #fff 2px, #fff 4px)",
+              border: "1px solid #ddd",
+            }}
+          />
+          <span style={{ fontSize: 12, color: "#555" }}>0</span>
+        </div>
+        <div style={{ display: "flex", gap: 2 }}>
+          {swatches.map((c, i) => (
+            <div key={i} style={{ width: 20, height: 10, background: c }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 12, color: "#555" }}>High ({maxCount})</span>
       </div>
-      <div style={{ display: "flex", gap: 2 }}>
-        {swatches.map((c, i) => (
-          <div key={i} style={{ width: 20, height: 10, background: c }} />
-        ))}
-      </div>
-      <span style={{ fontSize: 12, color: "#555" }}>High ({maxCount})</span>
     </div>
   );
 }

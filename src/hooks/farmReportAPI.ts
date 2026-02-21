@@ -73,3 +73,27 @@ export async function updateReport(payload: {
     return text as any;
   }
 }
+
+export async function getAISummary(): Promise<{
+  summary: string;
+  reportCount: number;
+  generatedAt: string;
+}> {
+  const res = await fetch(`${API}/farmreport/ai-summary`);
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+
+  try {
+    const parsed = JSON.parse(text);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof parsed.body === "string"
+    ) {
+      return JSON.parse(parsed.body);
+    }
+    return parsed;
+  } catch {
+    return text as any;
+  }
+}
