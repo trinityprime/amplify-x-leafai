@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { Link } from 'react-router-dom';
+import { listAllDetections, LeafDetection } from '../hooks/leafDetectionApi';
 import {
   Activity,
   Calendar,
@@ -22,6 +23,7 @@ import {
   Pencil,
   X,
   Save,
+  Download,
 } from 'lucide-react';
 import {
   BarChart,
@@ -41,6 +43,7 @@ import {
   deleteCorrelation,
   updateCorrelation,
   rerunCorrelationAnalysis,
+  fetchWeather,
   CorrelationAnalysis as CorrelationAnalysisType,
   getDefaultDateRange,
   formatDate,
@@ -52,6 +55,44 @@ const getBarColor = (rate: number): string => {
   if (rate >= 50) return '#f97316'; // orange
   if (rate >= 30) return '#eab308'; // yellow
   return '#22c55e'; // green
+};
+
+// Export correlation analysis as CSV
+const exportToCSV = (analysis: CorrelationAnalysisType) => {
+  const rows = [
+    ['LeafAI Correlation Analysis Report'],
+    ['Date Range', analysis.dateRange],
+    ['Generated On', new Date(analysis.createdAt).toLocaleString('en-SG')],
+    ['Weather Data Points', analysis.weatherDataPoints.toString()],
+    ['Total Detections', analysis.totalDetections.toString()],
+    analysis.name ? ['Analysis Name', analysis.name] : [],
+    analysis.notes ? ['Notes', analysis.notes] : [],
+    [],
+    ['Condition', 'Weather Days', 'Bad Leaves', 'Good Leaves', 'Total Detections', 'Disease Rate (%)'],
+    ...analysis.correlations.map((c) => [
+      c.condition,
+      c.weatherDays.toString(),
+      c.badLeafCount.toString(),
+      c.goodLeafCount.toString(),
+      c.totalDetections.toString(),
+      c.correlationRate.toString(),
+    ]),
+    [],
+    ['Key Insights'],
+    ...analysis.insights.map((i) => [i.type.toUpperCase(), i.message]),
+  ].filter((row) => row.length > 0);
+
+  const csvContent = rows
+    .map((row) => row.map((cell) => `"${cell}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `leafai-correlation-${analysis.dateRange.replace(/ to /g, '_to_')}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 };
 
 export default function CorrelationAnalysis() {
@@ -74,6 +115,15 @@ export default function CorrelationAnalysis() {
   const [publishedFilter, setPublishedFilter] = useState<string>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filterFarmer, setFilterFarmer] = useState('');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterDate, setFilterDate] = useState('');
+
+  // Involved uploads state
+  const [involvedUploads, setInvolvedUploads] = useState<LeafDetection[]>([]);
+  const [showUploads, setShowUploads] = useState(false);
+  const [loadingUploads, setLoadingUploads] = useState(false);
 
   // Edit modal state
   const [editingAnalysis, setEditingAnalysis] = useState<CorrelationAnalysisType | null>(null);
@@ -82,6 +132,7 @@ export default function CorrelationAnalysis() {
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<LeafDetection | null>(null);
 
   // Load previous analyses on mount
   useEffect(() => {
@@ -98,6 +149,25 @@ export default function CorrelationAnalysis() {
       console.error('Failed to load previous analyses:', err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleViewUploads = async (a: CorrelationAnalysisType) => {
+    setShowUploads(true);
+    setLoadingUploads(true);
+    try {
+      const all = await listAllDetections(userEmail);
+      // Parse the date range from the analysis
+      const [rangeStart, rangeEnd] = (a.dateRange || '').split(' to ');
+      const filtered = all.filter((d) => {
+        const detectionDate = d.createdAt?.split('T')[0];
+        return detectionDate >= rangeStart && detectionDate <= rangeEnd;
+      });
+      setInvolvedUploads(filtered);
+    } catch (err) {
+      console.error('Failed to load involved uploads:', err);
+    } finally {
+      setLoadingUploads(false);
     }
   };
 
@@ -213,8 +283,21 @@ export default function CorrelationAnalysis() {
   const handleAnalyze = async () => {
     setLoading(true);
     setError('');
+    setShowUploads(false);
+    setInvolvedUploads([]);
 
     try {
+      // Auto-fetch today's weather first so correlation has fresh data
+      const today = new Date().toISOString().split('T')[0];
+      if (endDate === today || startDate === today) {
+        try {
+          await fetchWeather('Singapore');
+        } catch (weatherErr) {
+          console.warn('Could not auto-fetch today\'s weather:', weatherErr);
+          // Don't block the analysis if weather fetch fails
+        }
+      }
+
       const result = await analyzeCorrelations({
         startDate,
         endDate,
@@ -229,6 +312,14 @@ export default function CorrelationAnalysis() {
       setLoading(false);
     }
   };
+
+  const filteredUploads = involvedUploads.filter((u) => {
+    if (filterFarmer && u.farmerId !== filterFarmer) return false;
+    if (filterLocation && u.location !== filterLocation) return false;
+    if (filterStatus !== 'all' && u.label !== filterStatus) return false;
+    if (filterDate && u.createdAt?.split('T')[0] !== filterDate) return false;
+    return true;
+  });
 
   // Prepare chart data
   const chartData = analysis?.correlations
@@ -402,7 +493,7 @@ export default function CorrelationAnalysis() {
               {loading ? (
                 <>
                   <Loader2 size={20} className="animate-spin" />
-                  Analyzing Data...
+                  Fetching Weather & Analyzing...
                 </>
               ) : (
                 <>
@@ -440,6 +531,148 @@ export default function CorrelationAnalysis() {
                   <p className="text-xs text-slate-500 mt-1">Conditions Analyzed</p>
                 </div>
               </div>
+
+              {/* View Involved Uploads Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    if (showUploads) {
+                      setShowUploads(false);
+                    } else {
+                      handleViewUploads(analysis);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                >
+                  <BarChart3 size={16} />
+                  {showUploads ? 'Hide Uploads' : `View Involved Uploads (${analysis.totalDetections})`}
+                </button>
+              </div>
+
+              {/* Involved Uploads Panel */}
+              {showUploads && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Involved Uploads
+                      <span className="ml-2 text-sm font-medium text-slate-500">({analysis.dateRange})</span>
+                    </h3>
+                    <button onClick={() => setShowUploads(false)} className="text-slate-400 hover:text-slate-600">
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {loadingUploads ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 size={24} className="animate-spin text-slate-400" />
+                    </div>
+                  ) : involvedUploads.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Activity size={32} className="mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm text-slate-500">No uploads found for this date range</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Filters Row */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <select
+                          value={filterFarmer}
+                          onChange={(e) => setFilterFarmer(e.target.value)}
+                          className="p-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="">All Farmers</option>
+                          {[...new Set(involvedUploads.map((u) => u.farmerId).filter(Boolean))].map((f) => (
+                            <option key={f} value={f}>{f}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={filterLocation}
+                          onChange={(e) => setFilterLocation(e.target.value)}
+                          className="p-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="">All Locations</option>
+                          {[...new Set(involvedUploads.map((u) => u.location).filter(Boolean))].map((l) => (
+                            <option key={l} value={l}>{l}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                          className="p-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="bad">Bad Leaf</option>
+                          <option value="good">Good Leaf</option>
+                        </select>
+                        <input
+                          type="date"
+                          value={filterDate}
+                          onChange={(e) => setFilterDate(e.target.value)}
+                          className="p-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      {/* Results count */}
+                      <p className="text-xs text-slate-400 mb-3">
+                        Showing {filteredUploads.length} of {involvedUploads.length} uploads
+                      </p>
+
+                      {filteredUploads.length === 0 ? (
+                        <div className="text-center py-6">
+                          <Activity size={28} className="mx-auto text-slate-300 mb-2" />
+                          <p className="text-sm text-slate-500">No uploads match the filters</p>
+                          <button
+                            onClick={() => { setFilterFarmer(''); setFilterLocation(''); setFilterStatus('all'); setFilterDate(''); }}
+                            className="text-xs text-emerald-600 hover:text-emerald-700 mt-2"
+                          >
+                            Clear filters
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                          {filteredUploads.map((upload) => (
+                            <div
+                              key={upload.id}
+                              className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => setSelectedImage(upload)}
+                            >
+                              {upload.photoUrl ? (
+                                <img
+                                  src={upload.photoUrl}
+                                  alt={upload.content || 'Leaf detection'}
+                                  className="w-full h-28 object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '';
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-28 bg-slate-200 flex items-center justify-center">
+                                  <Activity size={24} className="text-slate-400" />
+                                </div>
+                              )}
+                              <div className="p-3">
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${
+                                    upload.label === 'bad'
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-green-100 text-green-700'
+                                  }`}
+                                >
+                                  {upload.label === 'bad' ? '🍂 Bad Leaf' : '🌿 Good Leaf'}
+                                </span>
+                                <p className="text-xs text-slate-500 mt-1 truncate">👤 {upload.farmerId || 'Unknown farmer'}</p>
+                                <p className="text-xs text-slate-500 truncate">📍 {upload.location || 'No location'}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">🗓 {new Date(upload.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Correlation Bar Chart */}
               {chartData.length > 0 && (
@@ -492,7 +725,16 @@ export default function CorrelationAnalysis() {
 
               {/* Correlation Details Table */}
               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-900 mb-6">Detailed Results</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-900">Detailed Results</h3>
+                  <button
+                    onClick={() => exportToCSV(analysis)}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-sm hover:bg-emerald-100 transition-colors"
+                  >
+                    <Download size={15} />
+                    Export CSV
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -703,7 +945,7 @@ export default function CorrelationAnalysis() {
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                     }`}
-                    onClick={() => setAnalysis(a)}
+                    onClick={() => { setAnalysis(a); setShowUploads(false); setInvolvedUploads([]); setFilterFarmer(''); setFilterLocation(''); setFilterStatus('all'); setFilterDate(''); }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -931,6 +1173,56 @@ export default function CorrelationAnalysis() {
           </div>
         </div>
       )}
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImage.photoUrl}
+              alt={selectedImage.content || 'Leaf detection'}
+              className="w-full object-contain max-h-96"
+            />
+            <div className="p-5 space-y-3">
+              <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold ${
+                selectedImage.label === 'bad' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+              }`}>
+                {selectedImage.label === 'bad' ? '🍂 Bad Leaf' : '🌿 Good Leaf'}
+              </span>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">👤 Farmer</p>
+                  <p className="text-sm font-bold text-slate-700">{selectedImage.farmerId || 'Unknown'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📍 Location</p>
+                  <p className="text-sm font-bold text-slate-700">{selectedImage.location || 'No location'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🗓 Date</p>
+                  <p className="text-sm font-bold text-slate-700">{new Date(selectedImage.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🐛 Pest Type</p>
+                  <p className="text-sm font-bold text-slate-700">{selectedImage.pestType || 'Unknown'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="mt-2 w-full py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

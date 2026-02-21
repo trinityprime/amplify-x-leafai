@@ -264,7 +264,7 @@ export default function WeatherDashboard() {
                   <span className="text-7xl font-black">
                     {currentWeather.temperature.toFixed(1)}
                   </span>
-                  <span className="text-3xl font-bold text-blue-200 mb-2">C</span>
+                  <span className="text-3xl font-bold text-blue-200 mb-2">°C</span>
                   <span className="text-xl font-medium text-blue-200 ml-4 mb-3 capitalize">
                     {currentWeather.description || currentWeather.conditions}
                   </span>
@@ -361,7 +361,7 @@ export default function WeatherDashboard() {
                       <span className="text-sm text-slate-600 flex items-center gap-2">
                         <Thermometer size={14} /> Avg Temperature
                       </span>
-                      <span className="font-bold text-slate-900">{avgTemp}C</span>
+                      <span className="font-bold text-slate-900">{avgTemp}°C</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600 flex items-center gap-2">
@@ -438,7 +438,7 @@ export default function WeatherDashboard() {
                           yAxisId="temp"
                           tick={{ fontSize: 12 }}
                           stroke="#94a3b8"
-                          label={{ value: 'C', position: 'insideLeft', angle: -90 }}
+                          label={{ value: '°C', position: 'insideLeft', angle: -90 }}
                         />
                         <YAxis
                           yAxisId="humidity"
@@ -463,7 +463,7 @@ export default function WeatherDashboard() {
                           stroke="#f97316"
                           strokeWidth={2}
                           dot={{ fill: '#f97316', strokeWidth: 0, r: 3 }}
-                          name="Temperature (C)"
+                          name="Temperature (°C)"
                         />
                         <Line
                           yAxisId="humidity"
@@ -555,7 +555,7 @@ export default function WeatherDashboard() {
                             <span className="capitalize">{w.conditions}</span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-right font-medium">{w.temperature}C</td>
+                        <td className="py-3 px-4 text-right font-medium">{w.temperature}°C</td>
                         <td className={`py-3 px-4 text-right font-medium ${
                           w.humidity >= 70 ? 'text-orange-600' : 'text-slate-900'
                         }`}>
