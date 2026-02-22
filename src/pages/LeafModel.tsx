@@ -310,10 +310,16 @@ export default function PlantUpload() {
                   <div>
                     <p className="text-4xl font-black text-slate-800 tracking-tighter">
                       {
-                        batchResults.filter((r) => r?.data[0] > r?.data[1])
-                          .length
+                        batchResults.filter(
+                          (r) =>
+                            Array.isArray(r?.data) && r.data[0] > r.data[1],
+                        ).length
                       }{" "}
-                      / {batchResults.filter((r) => r !== null).length}
+                      /{" "}
+                      {
+                        batchResults.filter((r) => Array.isArray(r?.data))
+                          .length
+                      }
                     </p>
                     <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
                       Healthy Leaves
