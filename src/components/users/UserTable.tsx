@@ -105,20 +105,24 @@ export default function UserTable({
 
   const LoadingRows = () => (
     <>
-      {[...Array(5)].map((_, i) => (
+      {[...Array(6)].map((_, i) => (
         <tr key={i} className="animate-pulse">
-          <td className="px-6 py-4 rounded-l-2xl border-y border-l border-slate-100 bg-white">
-            <div className="h-4 w-40 bg-slate-100 rounded-md" />
+          <td className="px-6 py-5 rounded-l-2xl border-y border-l border-slate-50 bg-white">
+            <div className="flex flex-col gap-2">
+              <div className="h-4 w-48 bg-slate-100 rounded-md shadow-inner" />
+              <div className="h-2 w-20 bg-slate-50 rounded-md" />
+            </div>
           </td>
-          <td className="px-6 py-4 border-y border-slate-100 bg-white">
-            <div className="h-3 w-20 bg-slate-50 rounded-md" />
+          <td className="px-6 py-5 border-y border-slate-50 bg-white">
+            <div className="h-3 w-24 bg-slate-100 rounded-md" />
           </td>
-          <td className="px-6 py-4 border-y border-slate-100 bg-white">
-            <div className="h-8 w-32 bg-slate-50 rounded-lg" />
+          <td className="px-6 py-5 border-y border-slate-50 bg-white">
+            <div className="h-9 w-36 bg-slate-100 rounded-xl" />
           </td>
-          <td className="px-6 py-4 rounded-r-2xl border-y border-r border-slate-100 bg-white">
-            <div className="flex justify-end gap-2">
-              <div className="h-8 w-16 bg-slate-50 rounded-md" />
+          <td className="px-6 py-5 rounded-r-2xl border-y border-r border-slate-50 bg-white">
+            <div className="flex justify-end gap-3">
+              <div className="h-9 w-9 bg-slate-100 rounded-lg" />
+              <div className="h-9 w-9 bg-slate-100 rounded-lg" />
             </div>
           </td>
         </tr>

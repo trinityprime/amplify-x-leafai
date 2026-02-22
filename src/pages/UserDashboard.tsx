@@ -1,7 +1,7 @@
 import { useUsers } from "../hooks/userApi";
 import CreateUserForm from "../components/users/CreateUserForm";
 import UserTable from "../components/users/UserTable";
-import { ShieldCheck, UserPlus, Users } from "lucide-react";
+import { ShieldCheck, UserPlus, Users, Loader2 } from "lucide-react";
 
 type UserDashboardProps = {
   user: any;
@@ -10,6 +10,7 @@ type UserDashboardProps = {
 export default function UserDashboard({ user }: UserDashboardProps) {
   const {
     users,
+    loading,
     emailError,
     validateEmail,
     createUser,
@@ -19,7 +20,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
   } = useUsers(user);
 
   const adminCount = users.filter((u: any) =>
-    u.groups?.includes("ADMIN")
+    u.groups?.includes("ADMIN"),
   ).length;
 
   return (
@@ -27,9 +28,13 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm transition-all mb-8">
         <div className="flex items-start gap-4">
-          {/* Emerald Icon Box - Matches the Upload page exactly */}
           <div className="p-3.5 bg-emerald-50 rounded-2xl text-emerald-600 shadow-sm border border-emerald-100/50">
-            <Users size={28} strokeWidth={2.5} />
+            {/* 2. Show a spinner in the icon box if loading */}
+            {loading ? (
+              <Loader2 size={28} className="animate-spin" />
+            ) : (
+              <Users size={28} strokeWidth={2.5} />
+            )}
           </div>
 
           <div>
@@ -43,21 +48,32 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         </div>
 
         <div className="flex gap-3">
+          {/* Total Users Stat */}
           <div className="bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100 text-center min-w-[120px]">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-0.5">
               Total Users
             </p>
-            <p className="text-2xl font-black text-slate-700 leading-none">
-              {users.length}
-            </p>
+            {loading ? (
+              <div className="h-6 w-8 bg-slate-200 animate-pulse rounded mx-auto mt-1" />
+            ) : (
+              <p className="text-2xl font-black text-slate-700 leading-none">
+                {users.length}
+              </p>
+            )}
           </div>
+
+          {/* Admin Stat */}
           <div className="bg-emerald-50 px-5 py-2.5 rounded-2xl border border-emerald-100 text-center min-w-[120px]">
             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.15em] mb-0.5">
               Admins
             </p>
-            <p className="text-2xl font-black text-emerald-700 leading-none">
-              {adminCount}
-            </p>
+            {loading ? (
+              <div className="h-6 w-8 bg-emerald-200 animate-pulse rounded mx-auto mt-1" />
+            ) : (
+              <p className="text-2xl font-black text-emerald-700 leading-none">
+                {adminCount}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -70,10 +86,12 @@ export default function UserDashboard({ user }: UserDashboardProps) {
               <UserPlus size={20} />
               <h2 className="font-bold text-slate-900">Provision New User</h2>
             </div>
+            {/* 3. Pass loading to the form if you want to disable inputs/button while creating */}
             <CreateUserForm
               onCreate={createUser}
               validate={validateEmail}
               error={emailError}
+              isLoading={loading}
             />
           </div>
         </div>
@@ -86,8 +104,10 @@ export default function UserDashboard({ user }: UserDashboardProps) {
               <h2 className="font-bold text-slate-900">Access Control List</h2>
             </div>
             <div className="p-6">
+              {/* 4. PASS THE LOADING PROP HERE */}
               <UserTable
                 users={users}
+                loading={loading}
                 onEnable={enableUser}
                 onDisable={disableUser}
                 onChangeRole={changeUserRole}
