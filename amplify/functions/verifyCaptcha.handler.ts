@@ -25,7 +25,7 @@ export const handler = async (event: CaptchaRequest) => {
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Secret key not configured" }),
-    };
+    };                                    
   }
 
   try {

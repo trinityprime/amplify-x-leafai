@@ -1,4 +1,3 @@
-// components/RoleGuard.tsx
 import { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { Navigate } from "react-router-dom";

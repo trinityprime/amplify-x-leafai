@@ -16,24 +16,18 @@ export default function TurnstileWidget({
   const turnstile = useTurnstile();
 
   const handleVerify = (token: string) => {
-    console.log(
-      "✅ Captcha verified with token:",
-      token.substring(0, 20) + "...",
-    );
     if (onVerify) {
       onVerify(token);
     }
   };
 
   const handleError = (error: Error) => {
-    console.error("❌ Captcha error:", error);
     if (onError) {
       onError(error);
     }
   };
 
   const handleExpire = () => {
-    console.log("⏰ Captcha token expired");
     if (turnstile) {
       turnstile.reset();
     }
