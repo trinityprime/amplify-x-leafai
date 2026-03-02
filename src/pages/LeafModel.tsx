@@ -10,6 +10,135 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
+// Collapsible card for each batch session in history
+function BatchSessionCard({ session }: { session: any }) {
+  const [open, setOpen] = useState(false);
+  const [selectedThumb, setSelectedThumb] = useState<string | null>(null);
+  return (
+    <>
+      <div className="border border-slate-100 rounded-xl bg-slate-50/50">
+        <button
+          className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-100 transition-colors"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          <div className="flex items-center gap-2">
+            {/* Thumbnails */}
+            {session.thumbnails && session.thumbnails.length > 0 && (
+              <div className="flex -space-x-2 mr-2">
+                {session.thumbnails
+                  .slice(0, 4)
+                  .map((thumb: string, idx: number) => (
+                    <img
+                      key={idx}
+                      src={thumb}
+                      alt="Batch thumbnail"
+                      className="w-7 h-7 rounded-lg border-2 border-white object-cover shadow-sm cursor-pointer hover:opacity-80"
+                      style={{ zIndex: 10 - idx }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedThumb(thumb);
+                      }}
+                    />
+                  ))}
+                {session.thumbnails.length > 4 && (
+                  <span className="w-7 h-7 flex items-center justify-center bg-slate-200 text-xs font-bold rounded-lg border-2 border-white">
+                    +{session.thumbnails.length - 4}
+                  </span>
+                )}
+              </div>
+            )}
+            <span className="text-xs font-black text-slate-700">
+              {session.timestamp}
+            </span>
+            <span className="text-[10px] font-bold text-emerald-600">
+              {session.summary.healthy} healthy
+            </span>
+            <span className="text-[10px] font-bold text-red-500">
+              {session.summary.unhealthy} unhealthy
+            </span>
+            <span className="text-[10px] font-bold text-slate-500">
+              Avg {(session.summary.avgConfidence * 100).toFixed(0)}%
+            </span>
+          </div>
+          <span className="text-xs text-slate-400 font-bold">
+            {open ? "▲" : "▼"}
+          </span>
+        </button>
+        {open && (
+          <div className="px-4 pb-3">
+            {session.results.length > 0 ? (
+              <div className="space-y-1 mt-2">
+                {session.results.map((h: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center p-2 rounded-lg border border-slate-50 bg-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      {h.thumbnail && (
+                        <img
+                          src={h.thumbnail}
+                          alt="Crop"
+                          className="w-8 h-8 rounded border border-slate-200 object-cover cursor-pointer hover:opacity-80"
+                          onClick={() => setSelectedThumb(h.thumbnail)}
+                        />
+                      )}
+                      <div>
+                        <p
+                          className={`text-xs font-black ${
+                            h.label === "Healthy"
+                              ? "text-emerald-600"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {h.label}
+                        </p>
+                        <p className="text-[10px] text-slate-400">{h.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-600 bg-white px-2 py-1 rounded-md border border-slate-100 shadow-sm">
+                      {(h.confidence * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-slate-400 italic text-center py-2">
+                No results in this batch
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Zoom Modal */}
+      {selectedThumb && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => setSelectedThumb(null)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-4xl max-h-[80vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedThumb(null)}
+              className="absolute top-2 right-2 z-10 p-1.5 bg-slate-900/60 hover:bg-red-500 backdrop-blur-md rounded-full text-white transition-all shadow-lg"
+            >
+              <X size={16} strokeWidth={3} />
+            </button>
+            <img
+              src={selectedThumb}
+              alt="Zoomed crop"
+              className="w-full h-full object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function PlantUpload() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -17,6 +146,8 @@ export default function PlantUpload() {
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // History now stores an array of batch sessions
+  // Each session: { timestamp, summary, results: [ { label, confidence, date } ] }
   const [history, setHistory] = useState<any[]>(() => {
     const saved = sessionStorage.getItem("plant_history");
     return saved ? JSON.parse(saved) : [];
@@ -116,9 +247,44 @@ export default function PlantUpload() {
       const responses = await Promise.all(uploadPromises);
       setBatchResults(responses);
 
-      const newEntries = responses
-        .filter((r) => r.success && !r.data.isRejected)
-        .map((r) => {
+      // Build batch session summary
+      const batchResultsFiltered = responses.filter(
+        (r) => r.success && !r.data.isRejected,
+      );
+      const healthyCount = batchResultsFiltered.filter(
+        (r) => r.data[0] > r.data[1],
+      ).length;
+      const unhealthyCount = batchResultsFiltered.length - healthyCount;
+      const avgConfidence =
+        batchResultsFiltered.length > 0
+          ? batchResultsFiltered.reduce(
+              (acc, r) => acc + Math.max(r.data[0], r.data[1]),
+              0,
+            ) / batchResultsFiltered.length
+          : 0;
+      const validIndexMap = new Map<number, string>();
+      responses.forEach((r, idx) => {
+        if (r.success && !r.data.isRejected) {
+          validIndexMap.set(r.id, previews[idx]);
+        }
+      });
+      const batchThumbnails = Array.from(validIndexMap.values());
+      const session = {
+        timestamp: new Date().toLocaleString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+          year: "2-digit",
+        }),
+        summary: {
+          total: batchResultsFiltered.length,
+          healthy: healthyCount,
+          unhealthy: unhealthyCount,
+          avgConfidence,
+        },
+        results: batchResultsFiltered.map((r) => {
           const isHealthy = r.data[0] > r.data[1];
           return {
             label: isHealthy ? "Healthy" : "Unhealthy",
@@ -127,9 +293,12 @@ export default function PlantUpload() {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            thumbnail: validIndexMap.get(r.id) || null,
           };
-        });
-      setHistory((prev) => [...newEntries, ...prev].slice(0, 10));
+        }),
+        thumbnails: batchThumbnails,
+      };
+      setHistory((prev) => [session, ...prev].slice(0, 10));
     } catch (err) {
       console.error(err);
     } finally {
@@ -353,35 +522,26 @@ export default function PlantUpload() {
           </div>
 
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <History size={16} className="text-slate-400" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">
-                Recent Scans
-              </h4>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <History size={16} className="text-slate-400" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  Recent Scans
+                </h4>
+              </div>
+              {history.length > 0 && (
+                <button
+                  onClick={() => setHistory([])}
+                  className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+                >
+                  Clear
+                </button>
+              )}
             </div>
             <div className="space-y-3">
               {history.length > 0 ? (
-                history.map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center p-3 rounded-xl border border-slate-50 hover:bg-slate-100 transition-colors"
-                  >
-                    <div>
-                      <p
-                        className={`text-xs font-black ${
-                          h.label === "Healthy"
-                            ? "text-emerald-600"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {h.label}
-                      </p>
-                      <p className="text-[10px] text-slate-400">{h.date}</p>
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-600 bg-white px-2 py-1 rounded-md border border-slate-100 shadow-sm">
-                      {(h.confidence * 100).toFixed(0)}%
-                    </div>
-                  </div>
+                history.map((session, i) => (
+                  <BatchSessionCard key={i} session={session} />
                 ))
               ) : (
                 <p className="text-[10px] text-slate-400 italic text-center py-4">

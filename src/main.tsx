@@ -111,71 +111,71 @@ function AppRoutes({ user }: { user: any }) {
           }
         />
 
-                {/* DATA ANALYST */}
-                <Route
-                  path="dashboard"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Dashboard />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="dashboard2"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Dashboardv2 />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="reports"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <Reports />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="new"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST"]}>
-                      <NewReport />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="export"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
-                      <ExportPage />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="scheduled-reports"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
-                      <ScheduledReportsPage />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="weather"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
-                      <WeatherDashboard />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="weather/correlations"
-                  element={
-                    <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
-                      <CorrelationAnalysis />
-                    </RoleGuard>
-                  }
-                />
+        {/* DATA ANALYST */}
+        <Route
+          path="dashboard"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Dashboard />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="dashboard2"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Dashboardv2 />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <Reports />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="new"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST"]}>
+              <NewReport />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="export"
+          element={
+            <RoleGuard allowedRoles={["FIELD_TECH"]}>
+              <ExportPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="scheduled-reports"
+          element={
+            <RoleGuard allowedRoles={["DATA_ANALYST", "FIELD_TECH"]}>
+              <ScheduledReportsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="weather"
+          element={
+            <RoleGuard allowedRoles={["FIELD_TECH"]}>
+              <WeatherDashboard />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="weather/correlations"
+          element={
+            <RoleGuard allowedRoles={["FIELD_TECH"]}>
+              <CorrelationAnalysis />
+            </RoleGuard>
+          }
+        />
         {/* DATA ANALYST */}
         <Route
           path="dashboard"

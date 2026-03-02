@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 
 export function useUsers(user: any) {
   const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); // Track initial & refresh loading
+  const [loading, setLoading] = useState(true); 
   const [emailError, setEmailError] = useState("");
 
   const fetchUsers = useCallback(async () => {
