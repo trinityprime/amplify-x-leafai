@@ -179,15 +179,74 @@ export default function PlantUpload() {
     setLoading(false);
   };
 
+  // Handle dropped items (folders and files)
+  const handleDroppedItems = async (
+    dataTransferItems: DataTransferItemList,
+  ) => {
+    const files: File[] = [];
+    const entries = [];
+
+    // Collect all entries
+    for (let i = 0; i < dataTransferItems.length; i++) {
+      const item = dataTransferItems[i];
+      // @ts-ignore - webkitGetAsEntry is not in TypeScript definitions
+      if (item.webkitGetAsEntry) {
+        // @ts-ignore
+        entries.push(item.webkitGetAsEntry());
+      }
+    }
+
+    // Recursively traverse entries
+    const traverseEntry = async (entry: any) => {
+      if (entry.isFile) {
+        return new Promise<File>((resolve) => {
+          entry.file((file: File) => {
+            resolve(file);
+          });
+        });
+      } else if (entry.isDirectory) {
+        const dirReader = entry.createReader();
+        return new Promise<File[]>((resolve) => {
+          dirReader.readEntries(async (entries: any[]) => {
+            const filesFromDir: File[] = [];
+            for (const childEntry of entries) {
+              const childFiles = await traverseEntry(childEntry);
+              if (Array.isArray(childFiles)) {
+                filesFromDir.push(...childFiles);
+              } else if (childFiles) {
+                filesFromDir.push(childFiles);
+              }
+            }
+            resolve(filesFromDir);
+          });
+        });
+      }
+    };
+
+    // Process all entries
+    for (const entry of entries) {
+      const result = await traverseEntry(entry);
+      if (Array.isArray(result)) {
+        files.push(...result);
+      } else if (result) {
+        files.push(result);
+      }
+    }
+
+    handleFiles(files);
+  };
+
   const handleFiles = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
+    // Filter only image files when uploading from a folder
+    const imageFiles = selectedFiles.filter((f) => f.type.startsWith("image/"));
+    setFiles((prev) => [...prev, ...imageFiles]);
     setPreviews((prev) => [
       ...prev,
-      ...selectedFiles.map((f) => URL.createObjectURL(f)),
+      ...imageFiles.map((f) => URL.createObjectURL(f)),
     ]);
     setBatchResults((prev) => [
       ...prev,
-      ...new Array(selectedFiles.length).fill(null),
+      ...new Array(imageFiles.length).fill(null),
     ]);
   };
 
@@ -340,7 +399,11 @@ export default function PlantUpload() {
               onDrop={(e) => {
                 e.preventDefault();
                 setIsDragging(false);
-                handleFiles(Array.from(e.dataTransfer.files));
+                if (e.dataTransfer.items) {
+                  handleDroppedItems(e.dataTransfer.items);
+                } else {
+                  handleFiles(Array.from(e.dataTransfer.files));
+                }
               }}
               className={`relative group/preview border-2 border-dashed rounded-3xl p-4 transition-all flex flex-col items-center justify-center min-h-[350px] ${
                 isDragging
@@ -425,10 +488,12 @@ export default function PlantUpload() {
                       type="file"
                       multiple
                       accept="image/*"
+                      webkitdirectory
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       onChange={(e) =>
                         handleFiles(Array.from(e.target.files || []))
                       }
+                      {...({} as { webkitdirectory?: boolean })}
                     />
                   </div>
                 </div>
@@ -438,16 +503,18 @@ export default function PlantUpload() {
                     <Upload size={32} />
                   </div>
                   <p className="font-bold text-slate-700">
-                    Drop field photos here
+                    Drop field photos or folder here
                   </p>
                   <input
                     type="file"
                     multiple
                     accept="image/*"
+                    webkitdirectory
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={(e) =>
                       handleFiles(Array.from(e.target.files || []))
                     }
+                    {...({} as { webkitdirectory?: boolean })}
                   />
                 </div>
               )}
